@@ -25,14 +25,7 @@ fn collapse_columns(inputs: &[Series]) -> PolarsResult<Series> {
     
     let length = inputs[0].len();
     
-    // Verify all inputs have the same length
-    for series in inputs.iter() {
-        if series.len() != length {
-            polars_bail!(ComputeError: "All input columns must have the same length");
-        }
-    }
-    
-    let mut result_builder = ListStringChunkedBuilder::new(
+    let mut result_builder: ListStringChunkedBuilder = ListStringChunkedBuilder::new(
         PlSmallStr::from_static(""),
         length,
         length * inputs.len() // rough estimate of total string capacity
@@ -40,11 +33,11 @@ fn collapse_columns(inputs: &[Series]) -> PolarsResult<Series> {
     
     // Iterate through each row
     for row_idx in 0..length {
-        let mut row_values = Vec::new();
+        let mut row_values: Vec<&str> = Vec::new();
         
         // Collect non-null values from all columns for this row
         for series in inputs.iter() {
-            let str_chunked = series.str().unwrap();
+            let str_chunked: &ChunkedArray<StringType> = series.str().unwrap();
             if let Some(value) = str_chunked.get(row_idx) {
                 row_values.push(value);
             }
