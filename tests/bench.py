@@ -23,7 +23,12 @@ def bench_big_strings(method=_method) -> None:
     fs = Fieldset()
     df = pl.DataFrame(
         {
-            f"col{i}": fs("person.full_name", i=1_000, key=maybe(None, probability=0.6))
+            # Gradually increase null probability from 0% to 20% across columns
+            f"col{i}": fs(
+                "person.full_name",
+                i=1_000,
+                key=maybe(None, probability=(0.2 * i / (width - 1)) if width > 1 else 0.0)
+            )
             for i in range(width)
         }
     ).sample(n=length, with_replacement=True)
