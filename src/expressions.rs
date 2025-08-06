@@ -1,16 +1,23 @@
 use polars::prelude::*;
 use pyo3_polars::derive::polars_expr;
+use serde::Deserialize;
 
 fn collapse_columns_output_type(_input_fields: &[Field]) -> PolarsResult<Field> {
     let field = Field::new(
-        PlSmallStr::from_static(""), // Empty name, will be set by the calling context
+        PlSmallStr::from_static(""),
         DataType::List(Box::new(DataType::String)),
     );
     Ok(field)
 }
 
+#[derive(Deserialize)]
+struct CollapseColumnsArgs {
+    stop_on_first_null: bool,
+}
+
+
 #[polars_expr(output_type_func=collapse_columns_output_type)]
-fn collapse_columns(inputs: &[Series]) -> PolarsResult<Series> {
+fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsResult<Series> {
     // Ensure we have at least one input
     if inputs.is_empty() {
         polars_bail!(ComputeError: "collapse_columns requires at least one input column");
@@ -24,6 +31,7 @@ fn collapse_columns(inputs: &[Series]) -> PolarsResult<Series> {
     }
 
     let length = inputs[0].len();
+    let stop_on_first_null = kwargs.stop_on_first_null;
 
     let mut result_builder: ListStringChunkedBuilder = ListStringChunkedBuilder::new(
         PlSmallStr::from_static(""),
@@ -40,6 +48,10 @@ fn collapse_columns(inputs: &[Series]) -> PolarsResult<Series> {
             let str_chunked: &ChunkedArray<StringType> = series.str().unwrap();
             if let Some(value) = str_chunked.get(row_idx) {
                 row_buf.push(value);
+            } else {
+                if stop_on_first_null{
+                    break;
+                }
             }
         }
         result_builder.append_values_iter(row_buf.iter().copied());

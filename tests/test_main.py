@@ -9,7 +9,7 @@ def test_simple():
             "col2": [None, 'hi', None, 'hello', 'Amanda']
         }
     )
-    result = df.select(res=collapse_columns(pl.all()))
+    result = df.select(res=collapse_columns(pl.all(), stop_on_first_null=True))
 
     expected_df = pl.DataFrame(
         {

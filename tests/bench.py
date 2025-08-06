@@ -7,7 +7,7 @@ from mimesis.keys import maybe
 
 
 def _method(df: pl.DataFrame) -> pl.DataFrame:
-    return df.select(collapse_columns(pl.all()))
+    return df.select(collapse_columns(pl.all(), stop_on_first_null=True))
 
 
 def _old(df: pl.DataFrame) -> pl.DataFrame:

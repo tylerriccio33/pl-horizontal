@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 LIB = Path(__file__).parent
 
 
-def collapse_columns(expr: IntoExprColumn) -> pl.Expr:
+def collapse_columns(expr: IntoExprColumn,*, stop_on_first_null: bool) -> pl.Expr:
     return register_plugin_function(
         args=[expr],
         plugin_path=LIB,
         function_name="collapse_columns",
         is_elementwise=True,
         input_wildcard_expansion=True,
+        kwargs={"stop_on_first_null": stop_on_first_null},
     )
 
