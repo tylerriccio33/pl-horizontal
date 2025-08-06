@@ -16,6 +16,35 @@ struct CollapseColumnsArgs {
     stop_on_first_null: bool,
 }
 
+fn _stop_on_first_null_fp(inputs: &[Series]) -> PolarsResult<Series> {
+    // Stop on first null fast path
+    let length = inputs[0].len();
+
+    // Allocate a result builder for List<String>
+    let mut result_builder: ListStringChunkedBuilder =
+        ListStringChunkedBuilder::new(PlSmallStr::from_static(""), length, length * inputs.len());
+    
+    // Create a small buffer to hold row values
+    let str_arrays: Vec<&ChunkedArray<StringType>> =
+        inputs.iter().map(|s| s.str().unwrap()).collect();
+    
+    // Row buffer: small fixed array on stack
+    let mut row_buf: SmallVec<[&str; 128]> = SmallVec::with_capacity(length);
+
+    for row_idx in 0..length {
+        row_buf.clear();
+
+        for arr in &str_arrays {
+            match arr.get(row_idx) {
+                Some(val) => row_buf.push(val),
+                None => break, // stop on first null
+            }
+        }
+        result_builder.append_values_iter(row_buf.iter().copied());
+    }
+    return Ok(result_builder.finish().into_series());
+}
+
 #[polars_expr(output_type_func=collapse_columns_output_type)]
 fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsResult<Series> {
     // Ensure we have at least one input
@@ -45,18 +74,7 @@ fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsRes
 
     // FAST PATH: Path for when we stop on the first null
     if stop_on_first_null {
-        for row_idx in 0..length {
-            row_buf.clear();
-
-            for arr in &str_arrays {
-                match arr.get(row_idx) {
-                    Some(val) => row_buf.push(val),
-                    None => break, // stop on first null
-                }
-            }
-            result_builder.append_values_iter(row_buf.iter().copied());
-        }
-        return Ok(result_builder.finish().into_series());
+        return _stop_on_first_null_fp(&inputs);
     }
 
     // SLOW PATH: Path for when we do not stop on the first null

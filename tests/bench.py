@@ -4,6 +4,7 @@ from pl_col_collapse import collapse_columns
 import timeit
 from mimesis import Fieldset
 from mimesis.keys import maybe
+from collections.abc import Callable
 
 
 def _new(df: pl.DataFrame) -> pl.DataFrame:
@@ -53,19 +54,21 @@ def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
 
 if __name__ == "__main__":
     # Old Method (1m rows):
-    # Time    -> 14.41s
-    # Memory  -> 6.29 GB
+    # Time    -> 15.51s
+    # Memory  -> 6.55 GB
 
     # Best Time (1m rows):
     # Time    -> 0.73s
-    # Memory  -> 2.20 GB
+    # Memory  -> 3.71 GB
 
     df = _yield_df()
+
+    FN: Callable = _new
 
     times = []
     mems = []
     for _ in range(10):
-        time, mem = bench_big_strings(df.sample(n=len(df), with_replacement=True), _new)
+        time, mem = bench_big_strings(df.sample(n=len(df), with_replacement=True), FN)
         times.append(time)
         mems.append(mem)
     print(f"Average time: {sum(times) / len(times):.2f} seconds")
