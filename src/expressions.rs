@@ -32,19 +32,17 @@ fn collapse_columns(inputs: &[Series]) -> PolarsResult<Series> {
     );
     
     // Iterate through each row
+    let mut row_buf: Vec<&str> = Vec::with_capacity(inputs.len());
+
     for row_idx in 0..length {
-        let mut row_values: Vec<&str> = Vec::new();
-        
-        // Collect non-null values from all columns for this row
-        for series in inputs.iter() {
+        row_buf.clear();
+        for series in inputs {
             let str_chunked: &ChunkedArray<StringType> = series.str().unwrap();
             if let Some(value) = str_chunked.get(row_idx) {
-                row_values.push(value);
+                row_buf.push(value);
             }
         }
-        
-        // Add the list of values for this row
-        result_builder.append_values_iter(row_values.into_iter());
+        result_builder.append_values_iter(row_buf.iter().copied());
     }
     
     Ok(result_builder.finish().into_series())
