@@ -58,8 +58,8 @@ if __name__ == "__main__":
     # Memory  -> 6.55 GB
 
     # Best Time (1m rows):
-    # Time    -> 0.73s
-    # Memory  -> 3.71 GB
+    # Time    -> 0.14s
+    # Memory  -> 3.18 GB
 
     df = _yield_df()
 
