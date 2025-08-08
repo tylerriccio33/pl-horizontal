@@ -17,23 +17,30 @@ def _old(df: pl.DataFrame) -> pl.DataFrame:
 
 def _yield_df() -> pl.DataFrame:
     width: int = 100
-    length: int = 1_000_000
+    length: int = 500_000
 
     # Create some random 5 character strings mixed in with None
     fs = Fieldset()
-    df = pl.DataFrame(
-        {
-            # Gradually increase null probability from 0% to 20% across columns
-            f"col{i}": fs(
-                "person.full_name",
-                i=1_000,
-                key=maybe(
-                    None, probability=(0.2 * i / (width - 1)) if width > 1 else 0.0
-                ),
-            )
-            for i in range(width)
-        }
-    ).sample(n=length, with_replacement=True)
+    df = (
+        pl.DataFrame(
+            {
+                f"col{i}": fs(
+                    "person.full_name", i=1_000, key=maybe(value=None, probability=0.7)
+                )
+                for i in range(width)
+            }
+        )
+        # Concat all rows and put the nulls last
+        .select(arr=pl.concat_arr(pl.all()).arr.sort(nulls_last=True))
+        # Add a row index for the reshaping back to horizontal
+        .with_row_index()
+        .explode(pl.col("arr"))
+        .with_columns(neighbor_n=pl.col("index").cum_count().over("index"))
+        # Transpose it back to horizontal along the row index
+        .pivot(on="neighbor_n", index="index", values="arr")
+        .sample(n=length, with_replacement=True)
+        .drop("index")
+    )
     assert df.shape == (length, width)  # INTERNAL
     return df
 
@@ -53,17 +60,20 @@ def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
 
 
 if __name__ == "__main__":
-    # Old Method (1m rows):
-    # Time    -> 15.51s
-    # Memory  -> 6.55 GB
+    # Old Method (500k rows):
+    # Time    -> 6.21s
+    # Memory  -> 3.76 GB
 
-    # Best Time (1m rows):
-    # Time    -> 0.14s
-    # Memory  -> 3.18 GB
+    # Best Time (500k rows):
+    # Time    -> .47s
+    # Memory  -> 2.03 GB
 
     df = _yield_df()
 
+    # FN: Callable = _old
     FN: Callable = _new
+
+    print(f"Benchmarking {FN.__name__}")
 
     times = []
     mems = []

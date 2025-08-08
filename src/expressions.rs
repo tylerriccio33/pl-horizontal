@@ -44,42 +44,74 @@ fn _stop_on_first_null_fp(inputs: &[Series]) -> PolarsResult<Series> {
     return Ok(result_builder.finish().into_series());
 }
 
-fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
-    // Fast path for when all nulls are backloaded
-    // This means we can skip checking for nulls in the middle of the row
-    // and only check the last column for nulls.
-    let length = inputs[0].len();
-    let width = inputs.len();
-
-    let mut result_builder =
-        ListStringChunkedBuilder::new(PlSmallStr::from_static(""), length, length * width);
-
-    let str_arrays: Vec<&ChunkedArray<StringType>> =
+/// Backloaded nulls right scan for columns with nulls only at the end.
+/// This function scans from the right to find the last non-null value in each row.
+/// It is optimized for cases where the last column is often filled, allowing for a fast path
+/// that avoids unnecessary scans.
+fn _backloaded_nulls_right_scan(inputs: &[Series]) -> PolarsResult<Series> {
+    let n_rows = inputs[0].len();
+    let n_cols = inputs.len();
+    let inputs_str: Vec<&ChunkedArray<StringType>> =
         inputs.iter().map(|s| s.str().unwrap()).collect();
 
-    for row_idx in 0..length {
-        // Step 1: Find last non-null (from the right)
-        let mut take_until = width;
-        for rev_idx in 0..width {
-            let arr = &str_arrays[width - 1 - rev_idx];
-            if unsafe { arr.get_unchecked(row_idx) }.is_some() {
-                take_until = width - rev_idx;
+    let mut max_valid_idx_per_row: Vec<usize> = vec![n_cols; n_rows];
+
+    // Reuse the allocation for rows that need fallback
+    let last_col: &ChunkedArray<StringType> = inputs_str[n_cols - 1];
+    let last_null_mask: ChunkedArray<BooleanType> = last_col.is_not_null();
+
+    for row_idx in 0..n_rows {
+        if last_null_mask.get(row_idx).unwrap_or(false) {
+            max_valid_idx_per_row[row_idx] = n_cols;
+            continue;
+        }
+
+        for col_idx in (0..n_cols).rev() {
+            if inputs_str[col_idx].get(row_idx).is_some() {
+                max_valid_idx_per_row[row_idx] = col_idx + 1;
                 break;
             }
         }
-
-        // Step 2: Directly append known-valid values
-        result_builder.append_values_iter((0..take_until).map(|col_idx| {
-            // SAFETY: values before `take_until` are guaranteed non-null
-            unsafe {
-                str_arrays[col_idx]
-                    .get_unchecked(row_idx)
-                    .unwrap_unchecked()
-            }
-        }));
     }
 
-    Ok(result_builder.finish().into_series())
+    let total_values: usize = max_valid_idx_per_row.iter().sum();
+    let mut builder: ListStringChunkedBuilder =
+        ListStringChunkedBuilder::new(PlSmallStr::from_static("res"), n_rows, total_values);
+
+    // Second pass: construct lists
+    for (row_idx, &limit) in max_valid_idx_per_row.iter().enumerate() {
+        let mut row_values: Vec<&str> = Vec::with_capacity(limit);
+        for col_idx in 0..limit {
+            let val: &str = inputs_str[col_idx].get(row_idx).unwrap();
+            row_values.push(val);
+        }
+        builder.append_values_iter(row_values.into_iter());
+    }
+
+    Ok(builder.finish().into_series())
+}
+
+fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
+    let len: usize = inputs[0].len();
+    let mut list_builder =
+        ListStringChunkedBuilder::new(PlSmallStr::from_static("res"), len, len * inputs.len());
+
+    for i in 0..len {
+        let mut values: Vec<&str> = Vec::with_capacity(inputs.len());
+
+        for s in inputs {
+            let str_arr: &ChunkedArray<StringType> = s.str().unwrap();
+            if let Some(val) = str_arr.get(i) {
+                values.push(val);
+            } else {
+                break; // If we hit a null, we stop adding values for this row
+            }
+        }
+
+        list_builder.append_values_iter(values.into_iter());
+    }
+
+    Ok(list_builder.finish().into_series())
 }
 
 #[polars_expr(output_type_func=collapse_columns_output_type)]
@@ -106,7 +138,7 @@ fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsRes
 
     // FAST PATH: Check if all columns have nulls only at the end
     if stop_on_first_null {
-        return _all_nulls_backloaded_fp(&inputs);
+        return _backloaded_nulls_right_scan(&inputs);
     }
     // TODO: Split these up
     // FAST PATH: Path for when we stop on the first null
