@@ -47,11 +47,13 @@ def _yield_df() -> pl.DataFrame:
 
 def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
     # Run the benchmark and record max memory during execution
-    start = timeit.default_timer()
     usage_before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+    start = timeit.default_timer()
     method(df)
-    usage_after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     end = timeit.default_timer()
+    
+    usage_after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
     # On macOS, ru_maxrss is in bytes
     max_memory = max(usage_before, usage_after) / (1024**3)
