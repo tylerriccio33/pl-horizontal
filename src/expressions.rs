@@ -1,10 +1,9 @@
+use polars::chunked_array::builder::ListStringChunkedBuilder;
+use polars::datatypes::PlSmallStr;
 use polars::prelude::*;
 use pyo3_polars::derive::polars_expr;
 use serde::Deserialize;
 use smallvec::SmallVec;
-use polars::chunked_array::builder::ListStringChunkedBuilder;
-use polars::datatypes::PlSmallStr;
-use arrow::array::Array;
 
 fn collapse_columns_output_type(_input_fields: &[Field]) -> PolarsResult<Field> {
     let field = Field::new(
@@ -100,10 +99,7 @@ fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
         ListStringChunkedBuilder::new(PlSmallStr::from_static("res"), len, len * inputs.len());
 
     // Borrow the chunked arrays once
-    let chunks: Vec<&ChunkedArray<StringType>> = inputs
-        .iter()
-        .map(|s| s.str().unwrap())
-        .collect();
+    let chunks: Vec<&ChunkedArray<StringType>> = inputs.iter().map(|s| s.str().unwrap()).collect();
 
     for row_idx in 0..len {
         // Instead of Vec, use SmallVec on stack
