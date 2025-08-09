@@ -2,6 +2,9 @@ use polars::prelude::*;
 use pyo3_polars::derive::polars_expr;
 use serde::Deserialize;
 use smallvec::SmallVec;
+use polars::chunked_array::builder::ListStringChunkedBuilder;
+use polars::datatypes::PlSmallStr;
+use arrow::array::Array;
 
 fn collapse_columns_output_type(_input_fields: &[Field]) -> PolarsResult<Field> {
     let field = Field::new(
@@ -92,26 +95,32 @@ fn _backloaded_nulls_right_scan(inputs: &[Series]) -> PolarsResult<Series> {
 }
 
 fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
-    let len: usize = inputs[0].len();
-    let mut list_builder =
+    let len = inputs[0].len();
+    let mut builder =
         ListStringChunkedBuilder::new(PlSmallStr::from_static("res"), len, len * inputs.len());
 
-    for i in 0..len {
-        let mut values: Vec<&str> = Vec::with_capacity(inputs.len());
+    // Borrow the chunked arrays once
+    let chunks: Vec<&ChunkedArray<StringType>> = inputs
+        .iter()
+        .map(|s| s.str().unwrap())
+        .collect();
 
-        for s in inputs {
-            let str_arr: &ChunkedArray<StringType> = s.str().unwrap();
-            if let Some(val) = str_arr.get(i) {
-                values.push(val);
+    for row_idx in 0..len {
+        // Instead of Vec, use SmallVec on stack
+        let mut vals = smallvec::SmallVec::<[&str; 16]>::new();
+
+        for arr in &chunks {
+            // This is still O(n_cols) per row, but the unwrap + SmallVec helps
+            if let Some(v) = arr.get(row_idx) {
+                vals.push(v);
             } else {
-                break; // If we hit a null, we stop adding values for this row
+                break;
             }
         }
-
-        list_builder.append_values_iter(values.into_iter());
+        builder.append_values_iter(vals.into_iter());
     }
 
-    Ok(list_builder.finish().into_series())
+    Ok(builder.finish().into_series())
 }
 
 #[polars_expr(output_type_func=collapse_columns_output_type)]
@@ -138,7 +147,7 @@ fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsRes
 
     // FAST PATH: Check if all columns have nulls only at the end
     if stop_on_first_null {
-        return _backloaded_nulls_right_scan(&inputs);
+        return _all_nulls_backloaded_fp(&inputs);
     }
     // TODO: Split these up
     // FAST PATH: Path for when we stop on the first null

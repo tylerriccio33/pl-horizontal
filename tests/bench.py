@@ -61,12 +61,12 @@ def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
 
 if __name__ == "__main__":
     # Old Method (500k rows):
-    # Time    -> 6.21s
-    # Memory  -> 3.76 GB
+    # Time    -> 6.226s
+    # Memory  -> 3.70 GB
 
     # Best Time (500k rows):
-    # Time    -> .47s
-    # Memory  -> 2.03 GB
+    # Time    -> .43s
+    # Memory  -> 2.02 GB
 
     df = _yield_df()
 
