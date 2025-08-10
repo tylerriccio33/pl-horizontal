@@ -59,13 +59,14 @@ fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
         let mut vals: SmallVec<[&str; 128]> = SmallVec::with_capacity(width);
 
         for arr in &chunks {
+            // Single fetch
             let v: Option<&str> = unsafe { arr.get_unchecked(row_idx) };
-            if let Some(s) = v {
-                vals.push(s);
-            } else {
-                break;
+            match v {
+                Some(s) => vals.push(s),
+                None => break, // backloaded null — done with this row
             }
         }
+
         builder.append_values_iter(vals.into_iter());
     }
 
