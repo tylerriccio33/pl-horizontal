@@ -10,7 +10,9 @@ def test_simple():
             "col2": [None, "hi", None, "hello", "Amanda"],
         }
     )
-    result = df.select(res=collapse_columns(pl.all(), stop_on_first_null=True)).select(pl.all().list.sort())
+    result = df.select(res=collapse_columns(pl.all(), is_null_sentinel=True)).select(
+        pl.all().list.sort()
+    )
 
     expected_df = pl.DataFrame(
         {

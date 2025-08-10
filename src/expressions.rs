@@ -15,10 +15,10 @@ fn collapse_columns_output_type(_input_fields: &[Field]) -> PolarsResult<Field> 
 
 #[derive(Deserialize)]
 struct CollapseColumnsArgs {
-    stop_on_first_null: bool,
+    is_null_sentinel: bool,
 }
 
-fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
+fn _null_sentinel_fp(inputs: &[Series]) -> PolarsResult<Series> {
     let len: usize = inputs[0].len();
     let width: usize = inputs.len();
     let mut builder =
@@ -61,11 +61,11 @@ fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsRes
         }
     }
 
-    let stop_on_first_null: bool = kwargs.stop_on_first_null;
+    let is_null_sentinel: bool = kwargs.is_null_sentinel;
 
     // FAST PATH: Check if all columns have nulls only at the end
-    if stop_on_first_null {
-        return _all_nulls_backloaded_fp(&inputs);
+    if is_null_sentinel {
+        return _null_sentinel_fp(&inputs);
     }
 
     // Pre-extract chunked arrays so we don't call .str().unwrap() every row
