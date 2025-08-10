@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     times: list[float] = []
     mems: list[float] = []
-    for _ in range(10):
+    for _ in range(20):
         time, mem = bench_big_strings(df.sample(n=len(df), with_replacement=True), FN)
         times.append(time)
         mems.append(mem)
