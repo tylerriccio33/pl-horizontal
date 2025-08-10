@@ -56,14 +56,12 @@ fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
     let chunks: Vec<&ChunkedArray<StringType>> = inputs.iter().map(|s| s.str().unwrap()).collect();
 
     for row_idx in 0..len {
-        // Instead of Vec, use SmallVec on stack
         let mut vals: SmallVec<[&str; 128]> = SmallVec::with_capacity(width);
 
         for arr in &chunks {
-            // This is still O(n_cols) per row, but the unwrap + SmallVec helps
-            if unsafe { arr.get_unchecked(row_idx).is_some() } {
-                // vals.push(v);
-                unsafe { vals.push(arr.get_unchecked(row_idx).unwrap()) };
+            let v: Option<&str> = unsafe { arr.get_unchecked(row_idx) };
+            if let Some(s) = v {
+                vals.push(s);
             } else {
                 break;
             }
