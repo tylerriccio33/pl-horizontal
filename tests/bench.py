@@ -16,8 +16,9 @@ def _old(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _yield_df() -> pl.DataFrame:
-    width: int = 100
-    length: int = 1_000_000
+    width_scalar: int = 1_000_000  # x times more rows than columns
+    length: int = 10_000_000
+    width: int = int(length / width_scalar)
 
     # Create some random 5 character strings mixed in with None
     fs = Fieldset()
@@ -25,7 +26,7 @@ def _yield_df() -> pl.DataFrame:
         pl.DataFrame(
             {
                 f"col{i}": fs(
-                    "person.full_name", i=1_000, key=maybe(value=None, probability=0.7)
+                    "person.full_name", i=1_000, key=maybe(value=None, probability=0.02)
                 )
                 for i in range(width)
             }
@@ -52,7 +53,7 @@ def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
     start = timeit.default_timer()
     method(df)
     end = timeit.default_timer()
-    
+
     usage_after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
     # On macOS, ru_maxrss is in bytes
@@ -62,27 +63,23 @@ def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
 
 
 if __name__ == "__main__":
-    # Old Method (500k rows):
-    # Time    -> 6.226s
-    # Memory  -> 3.70 GB
+    # Old Method (10m rows):
+    # Time    -> 16.226s
+    # Memory  -> 7.36 GB
 
-    # Best Time (500k rows):
-    # Time    -> .43s
-    # Memory  -> 2.02 GB
-
-    # Best Time (1m rows):
-    # Time    -> .88s
-    # Memory  -> 3.79 GB
+    # Best Time (10m rows):
+    # Time    -> 2.58s
+    # Memory  -> 5.21 GB
 
     df = _yield_df()
 
     # FN: Callable = _old
     FN: Callable = _new
 
-    print(f"Benchmarking {FN.__name__}")
+    print(f"Benchmarking {FN.__name__} @ {df.shape[0]:,} rows, {df.shape[1]} columns")
 
-    times = []
-    mems = []
+    times: list[float] = []
+    mems: list[float] = []
     for _ in range(10):
         time, mem = bench_big_strings(df.sample(n=len(df), with_replacement=True), FN)
         times.append(time)

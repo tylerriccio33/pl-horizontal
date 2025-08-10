@@ -18,34 +18,6 @@ struct CollapseColumnsArgs {
     stop_on_first_null: bool,
 }
 
-fn _stop_on_first_null_fp(inputs: &[Series]) -> PolarsResult<Series> {
-    // Stop on first null fast path
-    let length = inputs[0].len();
-
-    // Allocate a result builder for List<String>
-    let mut result_builder: ListStringChunkedBuilder =
-        ListStringChunkedBuilder::new(PlSmallStr::from_static(""), length, length * inputs.len());
-
-    let str_arrays: Vec<&ChunkedArray<StringType>> =
-        inputs.iter().map(|s: &Series| s.str().unwrap()).collect();
-
-    // Row buffer: small fixed array on stack
-    let mut row_buf: SmallVec<[&str; 128]> = SmallVec::with_capacity(length);
-
-    for row_idx in 0..length {
-        row_buf.clear();
-
-        for arr in &str_arrays {
-            match arr.get(row_idx) {
-                Some(val) => row_buf.push(val),
-                None => break, // stop on first null
-            }
-        }
-        result_builder.append_values_iter(row_buf.iter().copied());
-    }
-    return Ok(result_builder.finish().into_series());
-}
-
 fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
     let len = inputs[0].len();
     let width = inputs.len();
@@ -67,7 +39,7 @@ fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
             }
         }
 
-        builder.append_values_iter(vals.into_iter());
+        builder.append_trusted_len_iter(vals.as_slice().iter().cloned().map(Some));
     }
 
     Ok(builder.finish().into_series())
@@ -99,11 +71,6 @@ fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsRes
     if stop_on_first_null {
         return _all_nulls_backloaded_fp(&inputs);
     }
-    // TODO: Split these up
-    // FAST PATH: Path for when we stop on the first null
-    if stop_on_first_null {
-        return _stop_on_first_null_fp(&inputs);
-    }
 
     // Row buffer: small fixed array on stack
     let length = inputs[0].len();
@@ -120,7 +87,6 @@ fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsRes
             if let Some(val) = arr.get(row_idx) {
                 row_buf.push(val);
             }
-            // else: skip nulls, do not break
         }
         result_builder.append_values_iter(row_buf.iter().copied());
     }

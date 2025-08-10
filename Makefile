@@ -7,4 +7,4 @@ test:
 	uv run pytest
 
 bench:
-	uv run tests/bench.py
+	@uv run tests/bench.py
