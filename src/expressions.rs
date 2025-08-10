@@ -1,5 +1,3 @@
-use std::iter::Enumerate;
-
 use polars::chunked_array::builder::ListStringChunkedBuilder;
 use polars::datatypes::PlSmallStr;
 use polars::prelude::*;
@@ -21,8 +19,8 @@ struct CollapseColumnsArgs {
 }
 
 fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
-    let len = inputs[0].len();
-    let width = inputs.len();
+    let len: usize = inputs[0].len();
+    let width: usize = inputs.len();
     let mut builder =
         ListStringChunkedBuilder::new(PlSmallStr::from_static("res"), len, len * inputs.len());
 
@@ -63,20 +61,18 @@ fn collapse_columns(inputs: &[Series], kwargs: CollapseColumnsArgs) -> PolarsRes
         }
     }
 
-    let stop_on_first_null = kwargs.stop_on_first_null;
-
-    // Pre-extract chunked arrays so we don't call .str().unwrap() every row
-    // This avoids repeated calls to .str() which can be expensive
-    // when there are many rows.
-    let str_arrays: Vec<&ChunkedArray<StringType>> =
-        inputs.iter().map(|s| s.str().unwrap()).collect();
+    let stop_on_first_null: bool = kwargs.stop_on_first_null;
 
     // FAST PATH: Check if all columns have nulls only at the end
     if stop_on_first_null {
         return _all_nulls_backloaded_fp(&inputs);
     }
 
-    // Row buffer: small fixed array on stack
+    // Pre-extract chunked arrays so we don't call .str().unwrap() every row
+    // This avoids repeated calls to .str() which can be expensive
+    // when there are many rows.
+    let str_arrays: Vec<&ChunkedArray<StringType>> =
+        inputs.iter().map(|s| s.str().unwrap()).collect();
     let length = inputs[0].len();
     let mut row_buf: SmallVec<[&str; 128]> = SmallVec::with_capacity(inputs.len());
 

@@ -7,11 +7,11 @@ from mimesis.keys import maybe
 from collections.abc import Callable
 
 
-def _new(df: pl.DataFrame) -> pl.DataFrame:
+def _new(df: pl.LazyFrame) -> pl.LazyFrame:
     return df.select(collapse_columns(pl.all(), stop_on_first_null=True))
 
 
-def _old(df: pl.DataFrame) -> pl.DataFrame:
+def _old(df: pl.LazyFrame) -> pl.LazyFrame:
     return df.select(pl.concat_list(pl.all()).list.drop_nulls())
 
 
@@ -51,7 +51,7 @@ def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
     usage_before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
     start = timeit.default_timer()
-    method(df)
+    method(pl.LazyFrame(df)).collect()
     end = timeit.default_timer()
 
     usage_after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
