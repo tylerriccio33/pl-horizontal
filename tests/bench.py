@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 
 def _new(df: pl.LazyFrame) -> pl.LazyFrame:
-    return df.select(collapse_columns(pl.all(), stop_on_first_null=True))
+    return df.select(collapse_columns(pl.all(), is_null_sentinel=True))
 
 
 def _old(df: pl.LazyFrame) -> pl.LazyFrame:
@@ -51,7 +51,7 @@ def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
     usage_before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
     start = timeit.default_timer()
-    method(pl.LazyFrame(df)).collect()
+    method(pl.LazyFrame(df)).collect(engine="streaming")
     end = timeit.default_timer()
 
     usage_after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
@@ -64,17 +64,17 @@ def bench_big_strings(df: pl.DataFrame, method=_new) -> tuple[float, float]:
 
 if __name__ == "__main__":
     # Old Method (10m rows):
-    # Time    -> 16.226s
-    # Memory  -> 7.36 GB
+    # Time    -> 12.29s
+    # Memory  -> 5.54 GB
 
     # Best Time (10m rows):
-    # Time    -> 2.34s
+    # Time    -> .52s
     # Memory  -> 5.37 GB
 
     df = _yield_df()
 
-    # FN: Callable = _old
-    FN: Callable = _new
+    FN: Callable = _old
+    # FN: Callable = _new
 
     print(f"Benchmarking {FN.__name__} @ {df.shape[0]:,} rows, {df.shape[1]} columns")
 
