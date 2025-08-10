@@ -46,55 +46,9 @@ fn _stop_on_first_null_fp(inputs: &[Series]) -> PolarsResult<Series> {
     return Ok(result_builder.finish().into_series());
 }
 
-/// Backloaded nulls right scan for columns with nulls only at the end.
-/// This function scans from the right to find the last non-null value in each row.
-/// It is optimized for cases where the last column is often filled, allowing for a fast path
-/// that avoids unnecessary scans.
-fn _backloaded_nulls_right_scan(inputs: &[Series]) -> PolarsResult<Series> {
-    let n_rows = inputs[0].len();
-    let n_cols = inputs.len();
-    let inputs_str: Vec<&ChunkedArray<StringType>> =
-        inputs.iter().map(|s| s.str().unwrap()).collect();
-
-    let mut max_valid_idx_per_row: Vec<usize> = vec![n_cols; n_rows];
-
-    // Reuse the allocation for rows that need fallback
-    let last_col: &ChunkedArray<StringType> = inputs_str[n_cols - 1];
-    let last_null_mask: ChunkedArray<BooleanType> = last_col.is_not_null();
-
-    for row_idx in 0..n_rows {
-        if last_null_mask.get(row_idx).unwrap_or(false) {
-            max_valid_idx_per_row[row_idx] = n_cols;
-            continue;
-        }
-
-        for col_idx in (0..n_cols).rev() {
-            if inputs_str[col_idx].get(row_idx).is_some() {
-                max_valid_idx_per_row[row_idx] = col_idx + 1;
-                break;
-            }
-        }
-    }
-
-    let total_values: usize = max_valid_idx_per_row.iter().sum();
-    let mut builder: ListStringChunkedBuilder =
-        ListStringChunkedBuilder::new(PlSmallStr::from_static("res"), n_rows, total_values);
-
-    // Second pass: construct lists
-    for (row_idx, &limit) in max_valid_idx_per_row.iter().enumerate() {
-        let mut row_values: Vec<&str> = Vec::with_capacity(limit);
-        for col_idx in 0..limit {
-            let val: &str = inputs_str[col_idx].get(row_idx).unwrap();
-            row_values.push(val);
-        }
-        builder.append_values_iter(row_values.into_iter());
-    }
-
-    Ok(builder.finish().into_series())
-}
-
 fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
     let len = inputs[0].len();
+    let width = inputs.len();
     let mut builder =
         ListStringChunkedBuilder::new(PlSmallStr::from_static("res"), len, len * inputs.len());
 
@@ -103,12 +57,13 @@ fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
 
     for row_idx in 0..len {
         // Instead of Vec, use SmallVec on stack
-        let mut vals = smallvec::SmallVec::<[&str; 16]>::new();
+        let mut vals: SmallVec<[&str; 128]> = SmallVec::with_capacity(width);
 
         for arr in &chunks {
             // This is still O(n_cols) per row, but the unwrap + SmallVec helps
-            if let Some(v) = arr.get(row_idx) {
-                vals.push(v);
+            if unsafe { arr.get_unchecked(row_idx).is_some() } {
+                // vals.push(v);
+                unsafe { vals.push(arr.get_unchecked(row_idx).unwrap()) };
             } else {
                 break;
             }

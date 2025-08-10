@@ -17,7 +17,7 @@ def _old(df: pl.DataFrame) -> pl.DataFrame:
 
 def _yield_df() -> pl.DataFrame:
     width: int = 100
-    length: int = 500_000
+    length: int = 1_000_000
 
     # Create some random 5 character strings mixed in with None
     fs = Fieldset()
@@ -69,6 +69,10 @@ if __name__ == "__main__":
     # Best Time (500k rows):
     # Time    -> .43s
     # Memory  -> 2.02 GB
+
+    # Best Time (1m rows):
+    # Time    -> .88s
+    # Memory  -> 3.79 GB
 
     df = _yield_df()
 
