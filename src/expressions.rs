@@ -1,3 +1,5 @@
+use std::iter::Enumerate;
+
 use polars::chunked_array::builder::ListStringChunkedBuilder;
 use polars::datatypes::PlSmallStr;
 use polars::prelude::*;
@@ -27,16 +29,14 @@ fn _all_nulls_backloaded_fp(inputs: &[Series]) -> PolarsResult<Series> {
     // Borrow the chunked arrays once
     let chunks: Vec<&ChunkedArray<StringType>> = inputs.iter().map(|s| s.str().unwrap()).collect();
 
-    // Prealloc the SmallVec to avoid reallocations
+    // Pre-allocate a small buffer for values which will be reused
     let mut vals: SmallVec<[&str; 128]> = SmallVec::with_capacity(width);
     for row_idx in 0..len {
-        vals.clear(); // Clear the SmallVec for each row
-        // Use a small vector up to the width of the input columns
-        // let mut vals: SmallVec<[&str; 100]> = SmallVec::with_capacity(width);
+        vals.clear();
 
         for arr in &chunks {
             let v: Option<&str> = unsafe { arr.get_unchecked(row_idx) };
-            // TODO: Insert at index since we will actually know it
+
             match v {
                 Some(s) => vals.push(s),
                 None => break,
