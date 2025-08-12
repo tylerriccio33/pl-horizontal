@@ -16,3 +16,6 @@ lint:
 	@uvx ruff format
 	@uvx ruff check --fix
 	@uvx ty check
+
+tox:
+	@uvx tox -e py312,py313
