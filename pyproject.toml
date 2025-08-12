@@ -13,7 +13,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "maturin>=1.9.3",
-    "polars>=1.8.2",
+    "polars<=1.32.1",
 ]
 
 [tool.maturin]
