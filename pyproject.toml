@@ -23,4 +23,6 @@ module-name = "pl_col_collapse._internal"
 dev = [
     "mimesis>=18.0.0",
     "pytest>=8.3.5",
+    "pytest-cov",
+    "pytest-randomly>=3.16.0",
 ]
