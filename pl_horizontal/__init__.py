@@ -23,3 +23,14 @@ def collapse_columns(expr: IntoExprColumn, *, is_null_sentinel: bool) -> pl.Expr
         input_wildcard_expansion=True,
         kwargs={"is_null_sentinel": is_null_sentinel},
     )
+
+
+def arg_true_horizontal(expr: IntoExprColumn) -> pl.Expr:
+    return register_plugin_function(
+        args=[expr],
+        plugin_path=LIB,
+        function_name="arg_true_horizontal",
+        is_elementwise=True,
+        input_wildcard_expansion=True,
+        # kwargs={"is_null_sentinel": is_null_sentinel},
+    )
