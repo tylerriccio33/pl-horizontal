@@ -5,7 +5,7 @@ build:
 
 test:
 	@uv run pytest \
-		--cov pl_col_collapse \
+		--cov pl_horizontal \
 		--cov-report term-missing \
 		--randomly-seed $(shell date +%s)
 
