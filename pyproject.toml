@@ -3,7 +3,7 @@ requires = ["maturin>=1.0,<2.0", "polars>=1.3.0"]
 build-backend = "maturin"
 
 [project]
-name = "pl-col-collapse"
+name = "pl-horizontal"
 requires-python = ">=3.12"
 classifiers = [
   "Programming Language :: Rust",
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [tool.maturin]
-module-name = "pl_col_collapse._internal"
+module-name = "pl_horizontal._internal"
 
 [dependency-groups]
 dev = [

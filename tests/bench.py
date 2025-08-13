@@ -1,6 +1,6 @@
 import resource
 import polars as pl
-from pl_col_collapse import collapse_columns
+from pl_horizontal import collapse_columns
 import timeit
 from mimesis import Fieldset
 from mimesis.keys import maybe

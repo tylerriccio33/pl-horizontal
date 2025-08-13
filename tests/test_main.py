@@ -1,5 +1,5 @@
 import polars as pl
-from pl_col_collapse import collapse_columns
+from pl_horizontal import collapse_columns
 import pytest
 import itertools
 import polars.selectors as cs

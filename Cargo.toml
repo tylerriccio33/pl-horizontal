@@ -1,10 +1,10 @@
 [package]
-name = "pl-col-collapse"
+name = "pl-horizontal"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "pl_col_collapse"
+name = "pl_horizontal"
 crate-type= ["cdylib"]
 
 [dependencies]
