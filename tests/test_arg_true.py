@@ -1,6 +1,7 @@
 import polars as pl
 import pytest
 from pl_horizontal import arg_true_horizontal
+import numpy as np
 
 
 def test_basic_case():
@@ -76,6 +77,32 @@ def test_int_coercion():
         [1],  # 1 -> True
         [0],  # 2 -> True
     ]
+
+
+## Benchmaks:
+@pytest.fixture
+def df():
+    n_rows = 100_000
+    n_cols = 20
+
+    rng = np.random.default_rng(seed=42)  # reproducible
+
+    data = {}
+    for i in range(n_cols):
+        # Generate random bools (True/False)
+        bools = rng.choice([True, False], size=n_rows)
+
+        # Randomly set ~10% to None
+        mask = rng.random(n_rows) < 0.1
+        col = np.where(mask, None, bools)
+
+        data[f"col{i}"] = col.tolist()
+
+    return pl.DataFrame(data)
+
+
+def test_plugin_benchmark(benchmark, df):
+    benchmark(lambda: df.select(arg_true_horizontal(pl.all())))
 
 
 if __name__ == "__main__":

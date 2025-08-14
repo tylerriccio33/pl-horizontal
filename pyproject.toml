@@ -14,6 +14,7 @@ dynamic = ["version"]
 dependencies = [
     "maturin>=1.9.3",
     "polars<=1.32.1",
+    "pytest-benchmark>=5.1.0",
 ]
 
 [tool.maturin]
@@ -22,6 +23,7 @@ module-name = "pl_horizontal._internal"
 [dependency-groups]
 dev = [
     "mimesis>=18.0.0",
+    "numpy>=2.3.2",
     "pytest>=8.3.5",
     "pytest-cov",
     "pytest-randomly>=3.16.0",

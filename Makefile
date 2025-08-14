@@ -7,7 +7,9 @@ test:
 	@uv run pytest \
 		--cov pl_horizontal \
 		--cov-report term-missing \
-		--randomly-seed $(shell date +%s)
+		--randomly-seed $(shell date +%s) \
+		--benchmark-columns=mean,stddev,rounds \
+		--benchmark-sort=mean
 
 bench:
 	@uv run tests/bench.py
