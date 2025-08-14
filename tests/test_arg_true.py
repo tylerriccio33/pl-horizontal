@@ -1,10 +1,11 @@
 import polars as pl
 import pytest
-from pl_horizontal import arg_true_horizontal
+from pl_horizontal import arg_true_horizontal, arg_first_true_horizontal
 import numpy as np
 
 
-def test_basic_case():
+@pytest.mark.parametrize("stop_on_first", [False, True])
+def test_basic_case(stop_on_first):
     df = pl.DataFrame(
         {
             "a": [True, False, True],
@@ -12,15 +13,21 @@ def test_basic_case():
             "c": [False, False, True],
         }
     )
-    result = df.select(arg_true_horizontal(pl.all()))
-    assert result.to_series().to_list() == [
-        [0],  # row0: only 'a' is True
-        [1],  # row1: only 'b' is True
-        [0, 1, 2],  # row2: all True
-    ]
+    if stop_on_first:
+        result = df.select(arg_first_true_horizontal(pl.all()))
+        expected = [0, 1, 0]  # first True per row
+    else:
+        result = df.select(arg_true_horizontal(pl.all()))
+        expected = [
+            [0],  # row0
+            [1],  # row1
+            [0, 1, 2],  # row2
+        ]
+    assert result.to_series().to_list() == expected
 
 
-def test_multiple_true_per_row():
+@pytest.mark.parametrize("stop_on_first", [False, True])
+def test_multiple_true_per_row(stop_on_first):
     df = pl.DataFrame(
         {
             "x": [True, True],
@@ -28,55 +35,77 @@ def test_multiple_true_per_row():
             "z": [False, True],
         }
     )
-    result = df.select(arg_true_horizontal(pl.all()))
-    assert result.to_series().to_list() == [
-        [0, 1],  # row0: x,y
-        [0, 2],  # row1: x,z
-    ]
+    if stop_on_first:
+        result = df.select(arg_first_true_horizontal(pl.all()))
+        expected = [0, 0]  # first True per row
+    else:
+        result = df.select(arg_true_horizontal(pl.all()))
+        expected = [
+            [0, 1],  # row0
+            [0, 2],  # row1
+        ]
+    assert result.to_series().to_list() == expected
 
 
-def test_all_false():
+@pytest.mark.parametrize("stop_on_first", [False, True])
+def test_all_false(stop_on_first):
     df = pl.DataFrame(
         {
             "a": [False, False],
             "b": [False, False],
         }
     )
-    result = df.select(arg_true_horizontal(pl.all()))
-    assert result.to_series().to_list() == [
-        [],
-        [],
-    ]
+    if stop_on_first:
+        result = df.select(arg_first_true_horizontal(pl.all()))
+        expected = [None, None]  # no True found
+    else:
+        result = df.select(arg_true_horizontal(pl.all()))
+        expected = [
+            [],
+            [],
+        ]
+    assert result.to_series().to_list() == expected
 
 
-def test_with_nulls():
+@pytest.mark.parametrize("stop_on_first", [False, True])
+def test_with_nulls(stop_on_first):
     df = pl.DataFrame(
         {
             "a": [True, None],
             "b": [None, True],
         }
     )
-    result = df.select(arg_true_horizontal(pl.all()))
-    # Nulls are treated as False
-    assert result.to_series().to_list() == [
-        [0],  # row0: a=True, b=null
-        [1],  # row1: a=null, b=True
-    ]
+    if stop_on_first:
+        result = df.select(arg_first_true_horizontal(pl.all()))
+        expected = [0, 1]  # first True per row
+    else:
+        result = df.select(arg_true_horizontal(pl.all()))
+        expected = [
+            [0],  # row0
+            [1],  # row1
+        ]
+    assert result.to_series().to_list() == expected
 
 
-def test_int_coercion():
+@pytest.mark.parametrize("stop_on_first", [False, True])
+def test_int_coercion(stop_on_first):
     df = pl.DataFrame(
         {
             "a": [1, 0, 2],
             "b": [0, 1, 0],
         }
     )
-    result = df.select(arg_true_horizontal(pl.all()))
-    assert result.to_series().to_list() == [
-        [0],  # 1 -> True
-        [1],  # 1 -> True
-        [0],  # 2 -> True
-    ]
+    if stop_on_first:
+        result = df.select(arg_first_true_horizontal(pl.all()))
+        expected = [0, 1, 0]  # first True per row
+    else:
+        result = df.select(arg_true_horizontal(pl.all()))
+        expected = [
+            [0],  # row0
+            [1],  # row1
+            [0],  # row2
+        ]
+    assert result.to_series().to_list() == expected
 
 
 ## Benchmaks:
@@ -85,11 +114,10 @@ def df():
     n_rows = 100_000
     n_cols = 20
 
-    rng = np.random.default_rng(seed=42)  # reproducible
+    rng = np.random.default_rng(seed=42)
 
     data = {}
     for i in range(n_cols):
-        # Generate random bools (True/False)
         bools = rng.choice([True, False], size=n_rows)
 
         # Randomly set ~10% to None
@@ -104,6 +132,11 @@ def df():
 def test_arg_true_bench(benchmark, df):
     benchmark.group = "arg_true"
     benchmark(lambda: df.select(arg_true_horizontal(pl.all())))
+
+
+def test_arg_first_true(benchmark, df):
+    benchmark.group = "arg_true"
+    benchmark(lambda: df.select(arg_first_true_horizontal(pl.all())))
 
 
 if __name__ == "__main__":

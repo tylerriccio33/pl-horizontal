@@ -1,9 +1,9 @@
-use polars::chunked_array::builder::ListStringChunkedBuilder;
 use polars::datatypes::PlSmallStr;
 use polars::prelude::*;
 use pyo3_polars::derive::polars_expr;
-use serde::Deserialize;
-use smallvec::SmallVec;
+
+
+// -- Arg True
 
 fn arg_true_output_type(_input_fields: &[Field]) -> PolarsResult<Field> {
     let field = Field::new(
@@ -42,6 +42,32 @@ fn arg_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
         }
 
         builder.append_slice(&indices);
+    }
+
+    Ok(builder.finish().into_series())
+}
+
+
+// -- Arg First True
+
+
+#[polars_expr(output_type=Int32)]
+fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
+    let len: usize = inputs[0].len();
+    let mut builder= PrimitiveChunkedBuilder::<Int32Type>::new(PlSmallStr::from_str(""), len);
+
+    for row_idx in 0..len {
+        let mut found: Option<i32> = None;
+
+        for (col_idx, s) in inputs.iter().enumerate() {
+            let bool_s = s.cast(&DataType::Boolean)?;
+            if bool_s.bool().ok().and_then(|ca| ca.get(row_idx)) == Some(true) {
+                found = Some(col_idx as i32);
+                break; // stop at first true
+            }
+        }
+
+        builder.append_option(found);
     }
 
     Ok(builder.finish().into_series())
