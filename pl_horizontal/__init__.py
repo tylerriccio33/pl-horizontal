@@ -44,7 +44,6 @@ def collapse_columns(expr: IntoExprColumn, *, is_null_sentinel: bool) -> pl.Expr
         >>> # Fast path: nulls are guaranteed to be after all non-nulls in each row
         >>> res = df.select(f = collapse_columns(pl.col("a", "b", "c"), is_null_sentinel=True))
         >>> assert res["f"].to_list() == [['x', 'y'], [], ['z']]
-
     """
     return register_plugin_function(
         args=[expr],
@@ -57,6 +56,20 @@ def collapse_columns(expr: IntoExprColumn, *, is_null_sentinel: bool) -> pl.Expr
 
 
 def arg_true_horizontal(expr: IntoExprColumn) -> pl.Expr:
+    """
+    Return a horizontal boolean expression that indicates whether each row has any True value.
+
+    Args:
+        expr: A Polars expression or column(s) to evaluate row-wise.
+
+    Returns:
+        pl.Expr: Expression returning True if any value in the row is True, False otherwise.
+
+    Example:
+        >>> df = pl.DataFrame({"a": [True, False], "b": [False, True]})
+        >>> df.select(arg_true_horizontal(pl.all())).to_series().to_list()
+        [[0], [1]]
+    """
     return register_plugin_function(
         args=[expr],
         plugin_path=LIB,
@@ -67,6 +80,20 @@ def arg_true_horizontal(expr: IntoExprColumn) -> pl.Expr:
 
 
 def arg_first_true_horizontal(expr: IntoExprColumn) -> pl.Expr:
+    """
+    Return the index of the first True value per row, or None if no True is found.
+
+    Args:
+        expr: A Polars expression or column(s) to evaluate row-wise.
+
+    Returns:
+        pl.Expr: Expression returning the index of the first True in each row.
+
+    Example:
+        >>> df = pl.DataFrame({"a": [False, False], "b": [True, False], "c": [False, True]})
+        >>> df.select(arg_first_true_horizontal(pl.all())).to_series().to_list()
+        [1, 2]
+    """
     return register_plugin_function(
         args=[expr],
         plugin_path=LIB,
