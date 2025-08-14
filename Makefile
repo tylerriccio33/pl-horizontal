@@ -11,7 +11,7 @@ test:
 		--benchmark-columns=mean,rounds \
 		--benchmark-sort=mean \
 		--benchmark-group-by=group \
-		--doctest-modules
+		--doctest-plus --doctest-glob '*.md'
 
 bench:
 	@uv run tests/bench.py
