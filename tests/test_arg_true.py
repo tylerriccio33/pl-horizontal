@@ -101,7 +101,8 @@ def df():
     return pl.DataFrame(data)
 
 
-def test_plugin_benchmark(benchmark, df):
+def test_arg_true_bench(benchmark, df):
+    benchmark.group = "arg_true"
     benchmark(lambda: df.select(arg_true_horizontal(pl.all())))
 
 
