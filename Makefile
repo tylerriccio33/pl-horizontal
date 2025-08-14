@@ -10,7 +10,8 @@ test:
 		--randomly-seed $(shell date +%s) \
 		--benchmark-columns=mean,rounds \
 		--benchmark-sort=mean \
-		--benchmark-group-by=group
+		--benchmark-group-by=group \
+		--doctest-modules
 
 bench:
 	@uv run tests/bench.py
