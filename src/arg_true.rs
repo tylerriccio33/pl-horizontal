@@ -54,15 +54,15 @@ fn arg_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
 #[polars_expr(output_type=UInt32)]
 fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
     let len: usize = inputs[0].len();
-    let mut builder= PrimitiveChunkedBuilder::<Int32Type>::new(PlSmallStr::from_str(""), len);
+    let mut builder= PrimitiveChunkedBuilder::<UInt32Type>::new(PlSmallStr::from_str(""), len);
 
     for row_idx in 0..len {
-        let mut found: Option<i32> = None;
+        let mut found: Option<u32> = None;
 
         for (col_idx, s) in inputs.iter().enumerate() {
             let bool_s = s.cast(&DataType::Boolean)?;
             if bool_s.bool().ok().and_then(|ca| ca.get(row_idx)) == Some(true) {
-                found = Some(col_idx as i32);
+                found = Some(col_idx as u32);
                 break; // stop at first true
             }
         }
