@@ -51,7 +51,7 @@ fn arg_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
 // -- Arg First True
 
 
-#[polars_expr(output_type=Int32)]
+#[polars_expr(output_type=UInt32)]
 fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
     let len: usize = inputs[0].len();
     let mut builder= PrimitiveChunkedBuilder::<Int32Type>::new(PlSmallStr::from_str(""), len);

@@ -134,8 +134,53 @@ def test_arg_true_bench(benchmark, df):
     benchmark(lambda: df.select(arg_true_horizontal(pl.all())))
 
 
-def test_arg_first_true(benchmark, df):
+def test_arg_true_bench_old(benchmark, df):
+    """Arg true horizontals if we know the columns."""
     benchmark.group = "arg_true"
+
+    exprs: list[pl.Expr] = [
+        pl.when(col).then(i).cast(int).alias(col) for i, col in enumerate(df.columns)
+    ]
+
+    res = df.select(pl.concat_list(exprs).list.drop_nulls())
+    mine = df.select(arg_true_horizontal(pl.all()))
+
+    assert res.equals(mine), "Invalid benchmark"
+
+    benchmark(lambda: df.select(pl.concat_list(exprs).drop_nulls()))
+
+
+def test_arg_first_true_bench_known_cols_old(benchmark, df) -> None:
+    """Benchmark for when columns are known (and ordered) at calltime."""
+    benchmark.group = "arg_first_true"
+
+    col_iter = iter(df.columns)
+    exprs = pl.when(next(col_iter)).then(0)
+    for i, col in enumerate(col_iter, 1):
+        exprs = exprs.when(col).then(i)
+
+    res = df.select(exprs.alias("col0"))
+    mine = df.select(arg_first_true_horizontal(pl.all()))
+
+    assert res.equals(mine), "Invalid benchmark"
+
+    benchmark(lambda: df.select(exprs))
+
+
+def test_arg_first_true_bench_unknown_cols_old(benchmark, df) -> None:
+    """Benchmark for when columns are not known at calltime."""
+    benchmark.group = "arg_first_true"
+
+    res = df.select(pl.concat_arr(pl.all()).arr.arg_max())
+    mine = df.select(arg_first_true_horizontal(pl.all()))
+
+    assert res.equals(mine), "Invalid benchmark"
+
+    benchmark(lambda: df.select(pl.concat_arr(pl.all()).arr.arg_max()))
+
+
+def test_arg_first_true_bench(benchmark, df):
+    benchmark.group = "arg_first_true"
     benchmark(lambda: df.select(arg_first_true_horizontal(pl.all())))
 
 
