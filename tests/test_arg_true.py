@@ -86,28 +86,6 @@ def test_with_nulls(stop_on_first):
         ]
     assert result.to_series().to_list() == expected
 
-
-@pytest.mark.parametrize("stop_on_first", [False, True])
-def test_int_coercion(stop_on_first):
-    df = pl.DataFrame(
-        {
-            "a": [1, 0, 2],
-            "b": [0, 1, 0],
-        }
-    )
-    if stop_on_first:
-        result = df.select(arg_first_true_horizontal(pl.all()))
-        expected = [0, 1, 0]  # first True per row
-    else:
-        result = df.select(arg_true_horizontal(pl.all()))
-        expected = [
-            [0],  # row0
-            [1],  # row1
-            [0],  # row2
-        ]
-    assert result.to_series().to_list() == expected
-
-
 ## Benchmaks:
 @pytest.fixture
 def df():

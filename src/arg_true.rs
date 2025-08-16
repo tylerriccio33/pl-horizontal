@@ -2,7 +2,6 @@ use polars::datatypes::PlSmallStr;
 use polars::prelude::*;
 use pyo3_polars::derive::polars_expr;
 
-
 // -- Arg True
 
 fn arg_true_output_type(_input_fields: &[Field]) -> PolarsResult<Field> {
@@ -12,7 +11,6 @@ fn arg_true_output_type(_input_fields: &[Field]) -> PolarsResult<Field> {
     );
     Ok(field)
 }
-
 
 #[polars_expr(output_type_func=arg_true_output_type)]
 fn arg_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
@@ -47,21 +45,20 @@ fn arg_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
     Ok(builder.finish().into_series())
 }
 
-
 // -- Arg First True
-
 
 #[polars_expr(output_type=UInt32)]
 fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
-    let len: usize = inputs[0].len();
-    let mut builder= PrimitiveChunkedBuilder::<UInt32Type>::new(PlSmallStr::from_str(""), len);
+    let vec_size: usize = inputs[0].len();
+    let mut builder =
+        PrimitiveChunkedBuilder::<UInt32Type>::new(PlSmallStr::from_str(""), vec_size);
 
-    for row_idx in 0..len {
+    // TODO: Fill all None w/False to avoid a row by row check
+    for row_idx in 0..vec_size {
         let mut found: Option<u32> = None;
 
         for (col_idx, s) in inputs.iter().enumerate() {
-            let bool_s = s.cast(&DataType::Boolean)?;
-            if bool_s.bool().ok().and_then(|ca| ca.get(row_idx)) == Some(true) {
+            if unsafe { s.bool().ok().and_then(|ca| ca.get_unchecked(row_idx)) == Some(true) } {
                 found = Some(col_idx as u32);
                 break; // stop at first true
             }
