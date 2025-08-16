@@ -13,7 +13,7 @@ I have only several functions that are hybrids of list/array operations with som
 ## Installation
 
 ```bash
-uv install pl-horizontal
+uv pip install pl-horizontal
 ```
 
 ## Features
