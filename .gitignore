@@ -213,3 +213,4 @@ __marimo__/
 
 uv.lock
 cargo.lock
+.DS_Store
