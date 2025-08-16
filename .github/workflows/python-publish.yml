@@ -6,15 +6,34 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build wheels
+      - name: Build with maturin
         uses: messense/maturin-action@v1
         with:
-          manylinux: auto
+          manylinux: auto   # only matters on Linux
           args: --release --out dist --sdist
 
-      - name: Publish
+      - name: Upload wheels as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels
+          path: dist/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels
+          path: dist
+
+      - name: Publish to PyPI
         run: uv publish -t ${{ secrets.PYPI_API_TOKEN }}
