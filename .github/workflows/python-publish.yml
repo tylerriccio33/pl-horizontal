@@ -1,27 +1,20 @@
-# publish.yml
-
-name: "Publish"
+name: Publish
 
 on:
   release:
-    types: ["published"]
+    types: [published]
 
 jobs:
-  run:
-    name: "Build and publish release"
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Build
-        run: uv build
+      - name: Build wheels
+        uses: messense/maturin-action@v1
+        with:
+          manylinux: auto
+          args: --release --out dist --sdist
 
       - name: Publish
         run: uv publish -t ${{ secrets.PYPI_API_TOKEN }}
