@@ -32,3 +32,11 @@ gen-ci: ## Generate the CI File:
 	@sed -e '/- runner: ubuntu-22.04/{N;/\n[[:space:]]*target: aarch64/d;}' \
 	    $(WORKFLOW_FILE).bak > $(WORKFLOW_FILE)
 	@rm $(WORKFLOW_FILE).bak
+	@cp $(WORKFLOW_FILE) $(WORKFLOW_FILE).bak
+	@sed -e '/- runner: ubuntu-22.04/{N;/\n[[:space:]]*target: s390x/d;}' \
+	    $(WORKFLOW_FILE).bak > $(WORKFLOW_FILE)
+	@rm $(WORKFLOW_FILE).bak
+	@cp $(WORKFLOW_FILE) $(WORKFLOW_FILE).bak
+	@sed -e '/- runner: ubuntu-22.04/{N;/\n[[:space:]]*target: ppc64le/d;}' \
+	    $(WORKFLOW_FILE).bak > $(WORKFLOW_FILE)
+	@rm $(WORKFLOW_FILE).bak
