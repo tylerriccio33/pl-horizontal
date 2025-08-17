@@ -29,8 +29,6 @@ jobs:
           - runner: ubuntu-22.04
             target: x86
           - runner: ubuntu-22.04
-            target: aarch64
-          - runner: ubuntu-22.04
             target: armv7
           - runner: ubuntu-22.04
             target: s390x
@@ -70,8 +68,6 @@ jobs:
             target: x86_64
           - runner: ubuntu-22.04
             target: x86
-          - runner: ubuntu-22.04
-            target: aarch64
           - runner: ubuntu-22.04
             target: armv7
     steps:

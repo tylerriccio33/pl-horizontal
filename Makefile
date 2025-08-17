@@ -1,4 +1,4 @@
-
+WORKFLOW_FILE := .github/workflows/python-publish.yml
 
 build:
 	@uv run maturin develop --release
@@ -11,7 +11,8 @@ test:
 		--benchmark-columns=mean,rounds \
 		--benchmark-sort=mean \
 		--benchmark-group-by=group \
-		--doctest-plus --doctest-glob '*.md'
+		--doctest-plus \
+		--doctest-glob '*.md'
 
 bench:
 	@uv run tests/bench.py
@@ -27,3 +28,7 @@ tox:
 gen-ci: ## Generate the CI File:
 	@uvx maturin generate-ci github \
 		-o .github/workflows/python-publish.yml
+	@cp $(WORKFLOW_FILE) $(WORKFLOW_FILE).bak
+	@sed -e '/- runner: ubuntu-22.04/{N;/\n[[:space:]]*target: aarch64/d;}' \
+	    $(WORKFLOW_FILE).bak > $(WORKFLOW_FILE)
+	@rm $(WORKFLOW_FILE).bak
