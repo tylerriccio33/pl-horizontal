@@ -49,13 +49,10 @@ fn arg_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
 
 #[polars_expr(output_type=UInt32)]
 fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
-    // TODO: Apply amortized might be better here?
     let vec_size: usize = inputs[0].len();
-    let mut builder =
-        PrimitiveChunkedBuilder::<UInt32Type>::new(PlSmallStr::from_str(""), vec_size);
 
+    let mut result: Vec<Option<u32>> = Vec::with_capacity(vec_size);
 
-    // TODO: Fill all None w/False to avoid a row by row check
     for row_idx in 0..vec_size {
         let mut found: Option<u32> = None;
 
@@ -64,12 +61,13 @@ fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
 
             if val.is_some_and(|x| x) {
                 found = Some(col_idx as u32);
-                break; // stop at first true
+                break;
             }
         }
 
-        builder.append_option(found);
+        result.push(found);
     }
 
-    Ok(builder.finish().into_series())
+    Ok(UInt32Chunked::from_iter_options(PlSmallStr::from_str(""), result.into_iter()).into_series())
 }
+
