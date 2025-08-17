@@ -49,9 +49,11 @@ fn arg_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
 
 #[polars_expr(output_type=UInt32)]
 fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
+    // TODO: Apply amortized might be better here?
     let vec_size: usize = inputs[0].len();
     let mut builder =
         PrimitiveChunkedBuilder::<UInt32Type>::new(PlSmallStr::from_str(""), vec_size);
+
 
     // TODO: Fill all None w/False to avoid a row by row check
     for row_idx in 0..vec_size {
