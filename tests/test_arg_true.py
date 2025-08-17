@@ -4,8 +4,11 @@ from pl_horizontal import arg_true_horizontal, arg_first_true_horizontal
 import numpy as np
 
 
-@pytest.mark.parametrize("stop_on_first", [False, True])
-def test_basic_case(stop_on_first):
+@pytest.mark.parametrize(
+    ("stop_on_first", "selector"),
+    [(True, pl.all()), (True, ["a", "b", "c"]), (False, pl.all())],
+)
+def test_basic_case(stop_on_first: bool, selector: pl.Expr):
     df = pl.DataFrame(
         {
             "a": [True, False, True],
@@ -14,10 +17,10 @@ def test_basic_case(stop_on_first):
         }
     )
     if stop_on_first:
-        result = df.select(arg_first_true_horizontal(pl.all()))
+        result = df.select(arg_first_true_horizontal(selector))
         expected = [0, 1, 0]  # first True per row
     else:
-        result = df.select(arg_true_horizontal(pl.all()))
+        result = df.select(arg_true_horizontal(selector))
         expected = [
             [0],  # row0
             [1],  # row1
@@ -26,8 +29,11 @@ def test_basic_case(stop_on_first):
     assert result.to_series().to_list() == expected
 
 
-@pytest.mark.parametrize("stop_on_first", [False, True])
-def test_multiple_true_per_row(stop_on_first):
+@pytest.mark.parametrize(
+    ("stop_on_first", "selector"),
+    [(True, pl.all()), (True, ["x", "y", "z"]), (False, pl.all())],
+)
+def test_multiple_true_per_row(stop_on_first: bool, selector: pl.Expr):
     df = pl.DataFrame(
         {
             "x": [True, True],
@@ -36,10 +42,10 @@ def test_multiple_true_per_row(stop_on_first):
         }
     )
     if stop_on_first:
-        result = df.select(arg_first_true_horizontal(pl.all()))
+        result = df.select(arg_first_true_horizontal(selector))
         expected = [0, 0]  # first True per row
     else:
-        result = df.select(arg_true_horizontal(pl.all()))
+        result = df.select(arg_true_horizontal(selector))
         expected = [
             [0, 1],  # row0
             [0, 2],  # row1
@@ -47,8 +53,11 @@ def test_multiple_true_per_row(stop_on_first):
     assert result.to_series().to_list() == expected
 
 
-@pytest.mark.parametrize("stop_on_first", [False, True])
-def test_all_false(stop_on_first):
+@pytest.mark.parametrize(
+    ("stop_on_first", "selector"),
+    [(True, pl.all()), (True, ["a", "b"]), (False, pl.all())],
+)
+def test_all_false(stop_on_first: bool, selector: pl.Expr):
     df = pl.DataFrame(
         {
             "a": [False, False],
@@ -56,10 +65,10 @@ def test_all_false(stop_on_first):
         }
     )
     if stop_on_first:
-        result = df.select(arg_first_true_horizontal(pl.all()))
+        result = df.select(arg_first_true_horizontal(selector))
         expected = [None, None]  # no True found
     else:
-        result = df.select(arg_true_horizontal(pl.all()))
+        result = df.select(arg_true_horizontal(selector))
         expected = [
             [],
             [],
@@ -67,8 +76,11 @@ def test_all_false(stop_on_first):
     assert result.to_series().to_list() == expected
 
 
-@pytest.mark.parametrize("stop_on_first", [False, True])
-def test_with_nulls(stop_on_first):
+@pytest.mark.parametrize(
+    ("stop_on_first", "selector"),
+    [(True, pl.all()), (True, ["a", "b"]), (False, pl.all())],
+)
+def test_with_nulls(stop_on_first: bool, selector: pl.Expr):
     df = pl.DataFrame(
         {
             "a": [True, None],
@@ -76,15 +88,16 @@ def test_with_nulls(stop_on_first):
         }
     )
     if stop_on_first:
-        result = df.select(arg_first_true_horizontal(pl.all()))
+        result = df.select(arg_first_true_horizontal(selector))
         expected = [0, 1]  # first True per row
     else:
-        result = df.select(arg_true_horizontal(pl.all()))
+        result = df.select(arg_true_horizontal(selector))
         expected = [
             [0],  # row0
             [1],  # row1
         ]
     assert result.to_series().to_list() == expected
+
 
 ## Benchmaks:
 @pytest.fixture
@@ -128,8 +141,8 @@ def test_arg_true_bench_old(benchmark, df):
     benchmark(lambda: df.select(pl.concat_list(exprs).drop_nulls()))
 
 
-def test_arg_first_true_bench_known_cols_old(benchmark, df) -> None:
-    """Benchmark for when columns are known (and ordered) at calltime."""
+def test_arg_first_true_bench_static(benchmark, df) -> None:
+    """Benchmark for when columns are known at calltime; my function may fallback to this.."""
     benchmark.group = "arg_first_true"
 
     col_iter = iter(df.columns)
@@ -145,7 +158,7 @@ def test_arg_first_true_bench_known_cols_old(benchmark, df) -> None:
     benchmark(lambda: df.select(exprs))
 
 
-def test_arg_first_true_bench_unknown_cols_old(benchmark, df) -> None:
+def test_arg_first_true_bench_dynamic_old(benchmark, df) -> None:
     """Benchmark for when columns are not known at calltime."""
     benchmark.group = "arg_first_true"
 
@@ -157,7 +170,7 @@ def test_arg_first_true_bench_unknown_cols_old(benchmark, df) -> None:
     benchmark(lambda: df.select(pl.concat_arr(pl.all()).arr.arg_max()))
 
 
-def test_arg_first_true_bench(benchmark, df):
+def test_arg_first_true_bench_dynamic(benchmark, df):
     benchmark.group = "arg_first_true"
     benchmark(lambda: df.select(arg_first_true_horizontal(pl.all())))
 

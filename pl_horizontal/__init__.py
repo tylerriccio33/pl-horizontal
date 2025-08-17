@@ -7,9 +7,11 @@ import polars as pl
 from polars.plugins import register_plugin_function
 
 from pl_horizontal._internal import __version__ as __version__
+from pl_horizontal._expr_builders import build_arg_true_horizontal_first_known_col
 
 if TYPE_CHECKING:
     from pl_horizontal.typing import IntoExprColumn
+    from collections.abc import Iterable
 
 LIB = Path(__file__).parent
 
@@ -79,7 +81,7 @@ def arg_true_horizontal(expr: IntoExprColumn) -> pl.Expr:
     )
 
 
-def arg_first_true_horizontal(expr: IntoExprColumn) -> pl.Expr:
+def arg_first_true_horizontal(expr: IntoExprColumn | Iterable[str]) -> pl.Expr:
     """
     Return the index of the first True value per row, or None if no True is found.
 
@@ -94,6 +96,10 @@ def arg_first_true_horizontal(expr: IntoExprColumn) -> pl.Expr:
         >>> df.select(arg_first_true_horizontal(pl.all())).to_series().to_list()
         [1, 2]
     """
+    if not isinstance(expr, pl.Expr):
+        # -> FP uses when-then (vectorized) which is almost always faster.
+        return build_arg_true_horizontal_first_known_col(expr)
+
     return register_plugin_function(
         args=[expr],
         plugin_path=LIB,
