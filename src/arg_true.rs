@@ -1,5 +1,6 @@
 use polars::datatypes::PlSmallStr;
 use polars::prelude::*;
+use polars_arrow::legacy::trusted_len::TrustedLenPush;
 use pyo3_polars::derive::polars_expr;
 
 // -- Arg True
@@ -65,7 +66,7 @@ fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
             }
         }
 
-        result.push(found);
+        unsafe { result.push_unchecked(found) };
     }
 
     Ok(UInt32Chunked::from_iter_options(PlSmallStr::from_str(""), result.into_iter()).into_series())
