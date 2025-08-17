@@ -69,6 +69,8 @@ fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
         unsafe { result.push_unchecked(found) };
     }
 
-    Ok(UInt32Chunked::from_iter_options(PlSmallStr::from_str(""), result.into_iter()).into_series())
+    Ok(
+        UInt32Chunked::from_iter_options(PlSmallStr::from_str(""), result.into_iter())
+            .into_series(),
+    )
 }
-
