@@ -25,4 +25,6 @@ tox:
 	@uvx tox -e py312,py313
 
 gen-ci: ## Generate the CI File:
-	@uvx maturin generate-ci github > .github/workflows/python-publish.yml
+	@uvx maturin generate-ci github \
+		--zig \
+		-o .github/workflows/python-publish.yml
