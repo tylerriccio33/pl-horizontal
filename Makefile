@@ -40,3 +40,7 @@ gen-ci: ## Generate the CI File:
 	@sed -e '/- runner: ubuntu-22.04/{N;/\n[[:space:]]*target: ppc64le/d;}' \
 	    $(WORKFLOW_FILE).bak > $(WORKFLOW_FILE)
 	@rm $(WORKFLOW_FILE).bak
+	@cp $(WORKFLOW_FILE) $(WORKFLOW_FILE).bak
+	@sed -e '/^[[:space:]]*branches:/,/^[[:space:]]*tags:/{/^[[:space:]]*branches:/d; /^[[:space:]]*- main/d; /^[[:space:]]*- master/d;}' \
+	    $(WORKFLOW_FILE).bak > $(WORKFLOW_FILE)
+	@rm $(WORKFLOW_FILE).bak
