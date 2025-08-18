@@ -54,15 +54,19 @@ fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
 
     let mut result: Vec<Option<u32>> = Vec::with_capacity(vec_size);
 
-    for row_idx in 0..vec_size {
-        let mut found: Option<u32> = None;
+    let bools: Vec<_> = inputs
+        .iter()
+        .map(|s| s.bool().unwrap())
+        .collect();
 
-        for (col_idx, s) in inputs.iter().enumerate() {
-            if let Some(false) | None = unsafe { s.get_unchecked(row_idx).extract_bool() } {
-                continue;
+    for row_idx in 0..vec_size {
+        let mut found = None;
+
+        for (col_idx, col) in bools.iter().enumerate() {
+            if unsafe { col.get_unchecked(row_idx).unwrap_unchecked() } {
+                found = Some(col_idx as u32);
+                break;
             }
-            found = Some(col_idx as u32);
-            break;
         }
 
         unsafe { result.push_unchecked(found) };
