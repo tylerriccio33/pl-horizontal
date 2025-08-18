@@ -1,5 +1,6 @@
 use polars::datatypes::PlSmallStr;
 use polars::prelude::*;
+use polars_arrow::legacy::trusted_len::TrustedLenPush;
 use pyo3_polars::derive::polars_expr;
 
 // -- Arg True
@@ -49,27 +50,27 @@ fn arg_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
 
 #[polars_expr(output_type=UInt32)]
 fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
-    // TODO: Apply amortized might be better here?
     let vec_size: usize = inputs[0].len();
-    let mut builder =
-        PrimitiveChunkedBuilder::<UInt32Type>::new(PlSmallStr::from_str(""), vec_size);
 
+    let mut result: Vec<Option<u32>> = Vec::with_capacity(vec_size);
 
-    // TODO: Fill all None w/False to avoid a row by row check
+    let bools: Vec<_> = inputs.iter().map(|s| s.bool().unwrap()).collect();
+
     for row_idx in 0..vec_size {
-        let mut found: Option<u32> = None;
+        let mut found = None;
 
-        for (col_idx, s) in inputs.iter().enumerate() {
-            let val: Option<bool> = unsafe { s.get_unchecked(row_idx).extract_bool() };
-
-            if val.is_some_and(|x| x) {
+        for (col_idx, col) in bools.iter().enumerate() {
+            if unsafe { col.get_unchecked(row_idx).unwrap_unchecked() } {
                 found = Some(col_idx as u32);
-                break; // stop at first true
+                break;
             }
         }
 
-        builder.append_option(found);
+        unsafe { result.push_unchecked(found) };
     }
 
-    Ok(builder.finish().into_series())
+    Ok(
+        UInt32Chunked::from_iter_options(PlSmallStr::from_str(""), result.into_iter())
+            .into_series(),
+    )
 }

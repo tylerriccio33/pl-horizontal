@@ -145,6 +145,7 @@ def test_arg_first_true_bench_static(benchmark, df) -> None:
     """Benchmark for when columns are known at calltime; my function may fallback to this.."""
     benchmark.group = "arg_first_true"
 
+    # TODO: Insert the builder function here
     col_iter = iter(df.columns)
     exprs = pl.when(next(col_iter)).then(0)
     for i, col in enumerate(col_iter, 1):
