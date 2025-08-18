@@ -54,10 +54,7 @@ fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
 
     let mut result: Vec<Option<u32>> = Vec::with_capacity(vec_size);
 
-    let bools: Vec<_> = inputs
-        .iter()
-        .map(|s| s.bool().unwrap())
-        .collect();
+    let bools: Vec<_> = inputs.iter().map(|s| s.bool().unwrap()).collect();
 
     for row_idx in 0..vec_size {
         let mut found = None;
