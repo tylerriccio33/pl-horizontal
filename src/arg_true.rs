@@ -58,10 +58,11 @@ fn arg_first_true_horizontal(inputs: &[Series]) -> PolarsResult<Series> {
         let mut found: Option<u32> = None;
 
         for (col_idx, s) in inputs.iter().enumerate() {
-            if let Some(true) = unsafe { s.get_unchecked(row_idx).extract_bool() } {
-                found = Some(col_idx as u32);
-                break;
+            if let Some(false) | None = unsafe { s.get_unchecked(row_idx).extract_bool() } {
+                continue;
             }
+            found = Some(col_idx as u32);
+            break;
         }
 
         unsafe { result.push_unchecked(found) };
