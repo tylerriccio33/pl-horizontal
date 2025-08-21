@@ -107,3 +107,28 @@ def arg_first_true_horizontal(expr: IntoExprColumn | Iterable[str]) -> pl.Expr:
         is_elementwise=True,
         input_wildcard_expansion=True,
     )
+
+
+def multi_index(expr: IntoExprColumn, lookup: pl.Series) -> pl.Expr:
+    """Take integer cols and use them as an index against the lookup.
+
+    This is functionally equivalent to using `gather`
+
+    Args:
+        expr (IntoExprColumn): _description_
+        lookup (pl.Series): _description_
+
+    Returns:
+        pl.Expr: _description_
+    """
+    if not lookup.dtype.is_(pl.String):
+        raise TypeError(f"`lookup` must be a String series, not `{type(lookup)}`")
+
+    return register_plugin_function(
+        args=[expr, lookup],
+        plugin_path=LIB,
+        function_name="multi_index",
+        is_elementwise=True,
+        # ! BUG -> When `kwargs` is removed, there's a 7x performance penalty
+        kwargs={"lookup": lookup},
+    )
