@@ -19,6 +19,7 @@ dependencies = [
 
 [tool.maturin]
 module-name = "pl_horizontal._internal"
+version-from-git = true
 
 [dependency-groups]
 dev = [
