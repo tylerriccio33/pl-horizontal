@@ -107,3 +107,37 @@ def arg_first_true_horizontal(expr: IntoExprColumn | Iterable[str]) -> pl.Expr:
         is_elementwise=True,
         input_wildcard_expansion=True,
     )
+
+
+def multi_index(expr: IntoExprColumn, lookup: pl.Series) -> pl.Expr:
+    """Take integer cols and use them as an index against the lookup.
+
+    This is functionally equivalent to using `gather` but against multiple columns
+    in a dataframe context. Function is unsafe(!), and will panic on a bad index;
+    done to increase performance during the indexing.
+
+    Args:
+        expr (IntoExprColumn): Integer column, ideally uint32.
+        lookup (pl.Series): String series to index into.
+
+    Returns:
+        pl.Expr: Expression evaluating to the indexed string series.
+
+    Example:
+        >>> df = pl.DataFrame({"idx": [2, 0, 2, 1]})
+        >>> ser = pl.Series(["alpha", "beta", "gamma"])
+        >>> out = df.select(multi_index(pl.col("idx"), ser))
+        >>> # idx 2 → "gamma", idx 0 → "alpha", idx 1 → "beta"
+        >>> assert out.to_series().to_list() == ["gamma", "alpha", "gamma", "beta"]
+    """
+    if not lookup.dtype.is_(pl.String):
+        raise TypeError(f"`lookup` must be a String series, not `{type(lookup)}`")
+
+    return register_plugin_function(
+        args=[expr, lookup],
+        plugin_path=LIB,
+        function_name="multi_index",
+        is_elementwise=True,
+        # ! BUG -> When `kwargs` is removed, there's a 7x performance penalty
+        kwargs={"lookup": lookup},
+    )

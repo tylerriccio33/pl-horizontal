@@ -1,5 +1,6 @@
 mod collapse;
 mod arg_true;
+mod multi_index;
 use pyo3::prelude::*;
 use pyo3_polars::PolarsAllocator;
 
