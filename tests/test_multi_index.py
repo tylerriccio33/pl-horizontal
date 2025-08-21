@@ -6,20 +6,92 @@ import numpy as np
 import string
 
 
-def test_multi_gather_simple() -> None:
-    s = pl.Series(values=["hi", "how", "are", "you"])
+VALID_DTYPES = [pl.UInt32, pl.Int32, pl.Int64]
+
+
+@pytest.mark.parametrize("dtype", VALID_DTYPES)
+def test_simple_lookup(dtype):
     df = pl.DataFrame(
         {
-            "foo": [0, 1, 2],
-            "duchess": [None, 3, 0],
+            "idx": [0, 2, 1],
+            "lookup": ["a", "b", "c"],
+        }
+    )
+    out = df.select(multi_index(pl.col("idx").cast(dtype), df["lookup"]))
+    assert out.to_series().to_list() == ["a", "c", "b"]
+
+
+@pytest.mark.parametrize("dtype", VALID_DTYPES)
+def test_with_nulls(dtype):
+    df = pl.DataFrame({"idx": [0, None, 1]})
+    ser = pl.Series(["x", "y"])
+    out = df.select(multi_index(pl.col("idx").cast(dtype), ser))
+    assert out.to_series().to_list() == ["x", None, "y"]
+
+
+@pytest.mark.parametrize("dtype", VALID_DTYPES)
+def test_out_of_bounds(dtype):
+    df = pl.DataFrame({"idx": [0, 2, 1]})
+    ser = pl.Series(["first", "second"])
+    err = "gather indices are out of bounds"
+    with pytest.raises(pl.exceptions.ComputeError, match=err):
+        df.select(multi_index(pl.col("idx").cast(dtype), ser))
+
+
+@pytest.mark.parametrize("dtype", VALID_DTYPES)
+def test_repeated_and_reverse(dtype):
+    df = pl.DataFrame({"idx": [2, 0, 2, 1]})
+    ser = pl.Series(["alpha", "beta", "gamma"])
+    out = df.select(multi_index(pl.col("idx").cast(dtype), ser))
+    # idx 2 → "gamma", idx 0 → "alpha", idx 1 → "beta"
+    assert out.to_series().to_list() == ["gamma", "alpha", "gamma", "beta"]
+
+
+@pytest.mark.parametrize("dtype", VALID_DTYPES)
+def test_all_null_idx(dtype):
+    df = pl.DataFrame({"idx": [None, None, None]})
+    ser = pl.Series(["one", "two"])
+    out = df.select(multi_index(pl.col("idx").cast(dtype), ser))
+    assert out.to_series().to_list() == [None, None, None]
+
+
+def test_simple1() -> None:
+    lookup = pl.Series(
+        [
+            "this",  # 0
+            "is",  # 1
+            "a",  # 2
+            "sentence",  # 3
+            "to",  # 4
+            "test",  # 5
+            "the",  # 6
+            "lookups",  # 7
+            "hi",  # 8
+        ]
+    )
+    df = pl.DataFrame(
+        {"amanda": [3, 4, 6, 8], "tyler": [0, 1, None, 3], "winnie": [-1, 0, None, 3]}
+    )
+
+    exp = pl.DataFrame(
+        {
+            "amanda": ["sentence", "to", "the", "hi"],
+            "tyler": ["this", "is", None, "sentence"],
+            "winnie": [-1, 0, None, 3],
         }
     )
 
+    res = df.with_columns(multi_index(pl.all().exclude("winnie"), lookup=lookup))
+
+    assert res.equals(exp)
+
+
+def test_multi_gather_simple() -> None:
+    s = pl.Series(values=["hi", "how", "are", "you"])
+    df = pl.DataFrame({"foo": [0, 1, 2], "duchess": [None, 3, 0]})
+
     expected = pl.DataFrame(
-        {
-            "foo": ["hi", "how", "are"],
-            "duchess": [None, "you", "hi"],
-        }
+        {"foo": ["hi", "how", "are"], "duchess": [None, "you", "hi"]}
     )
 
     res = df.select(multi_index(pl.all(), lookup=s))

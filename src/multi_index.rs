@@ -11,7 +11,7 @@ fn multi_index(inputs: &[Series]) -> PolarsResult<Series> {
     let out: ChunkedArray<StringType> = match idx_series.dtype() {
         DataType::UInt32 => {
             let idx: &ChunkedArray<UInt32Type> = idx_series.u32()?;
-            unsafe { lookup.take_unchecked(idx) }
+            lookup.take(idx)?
         }
         DataType::Int32 => {
             // reinterpret as u32
