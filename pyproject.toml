@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=1.0,<2.0", "polars>=1.3.0", "versioningit"]
+requires = ["maturin>=1.0,<2.0", "versioningit"]
 build-backend = "maturin"
 
 [project]
@@ -22,7 +22,7 @@ module-name = "pl_horizontal._internal"
 default-version = "0.0.0"
 
 [tool.versioningit.tag2version]
-prefix = "v"
+rmprefix = "v"
 
 [dependency-groups]
 dev = [
