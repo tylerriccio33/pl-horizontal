@@ -162,7 +162,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: true
+          fetch-depth: 0  # Ensure we get tags
+      - name: Set version from git tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # Extract version from tag (remove 'v' prefix if present)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "Setting version to: $VERSION"
+          
+          # Update Cargo.toml with the new version
+          sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+          
+          # Verify the change
+          echo "Updated Cargo.toml version:"
+          grep "^version" Cargo.toml
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
