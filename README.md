@@ -22,8 +22,27 @@ uv pip install pl-horizontal
 - `arg_true_horizontal`: Check if any column in a row is True.
 - `arg_first_true_horizontal`: Get the index of the first True value in a row.
 - `multi_index`: Get the value using an index on a lookup provided.
+- `arg_max_horizontal`: Get the index (or column name) of the maximum value in a row.
+- `arg_min_horizontal`: Get the index (or column name) of the minimum value in a row.
 
 ## Usage
+
+### Get Min/Max Horizontally
+
+```python
+import polars as pl
+from pl_horizontal import arg_max_horizontal
+
+## Return the column name of the maximum value per row
+df = pl.DataFrame({
+    "a": [1, 2, None],
+    "b": [3, None, 1],
+    "c": [2, 1, 4]
+})
+res = df.select(arg_max_horizontal(pl.all(), return_colname=True))
+print(res)
+assert res.to_series().to_list() == ['b', 'a', 'c']
+```
 
 ### Collapse Columns into List
 
