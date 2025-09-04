@@ -25,6 +25,15 @@ uv pip install pl-horizontal
 - `arg_max_horizontal`: Get the index (or column name) of the maximum value in a row.
 - `arg_min_horizontal`: Get the index (or column name) of the minimum value in a row.
 
+## Benchmarks and Performance
+
+If there's a custom implementation, I will include benchmarks against the polars native way. For many functions, there are significant speedups and memory reductions.
+
+![arg-first-true-bench](docs/arg-first-true.png)
+![arg-true-bench](docs/arg-true.png)
+![arg-star](docs/arg-star.png)
+![collapse-columns](docs/collapse-columns.png)
+
 ## Usage
 
 ### Get Min/Max Horizontally
