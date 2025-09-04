@@ -21,6 +21,7 @@ uv pip install pl-horizontal
 - `collapse_columns`: Collapse multiple columns into a list column, optionally using a null-sentinel fast path.
 - `arg_true_horizontal`: Check if any column in a row is True.
 - `arg_first_true_horizontal`: Get the index of the first True value in a row.
+- `multi_index`: Get the value using an index on a lookup provided.
 
 ## Usage
 
@@ -49,6 +50,7 @@ assert res_fast.to_series().to_list() == [['x','y'], [], ['z']]
 
 ### Horizontal Boolean Checks
 ```python
+import polars as pl
 from pl_horizontal import arg_true_horizontal, arg_first_true_horizontal
 
 df = pl.DataFrame({
@@ -72,6 +74,23 @@ print(res2)
 assert res2.to_series().to_list() == [1, 2]
 ```
 
+### Multi Index Lookup
+
+```python
+import polars as pl
+from pl_horizontal import multi_index
+
+ser = pl.Series(values=["hi", "how", "are", "you"])
+df = pl.DataFrame({"foo": [0, 1, 2], "duchess": [None, 3, 0]})
+
+expected = pl.DataFrame(
+    {"foo": ["hi", "how", "are"], "duchess": [None, "you", "hi"]}
+)
+
+res = df.select(multi_index(pl.all(), lookup=ser))
+print(res)
+assert expected.equals(res)
+```
 ## Contributing
 
 This is a simple project, would welcome any rust people, since I'm very new to it!

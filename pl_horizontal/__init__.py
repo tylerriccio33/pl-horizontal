@@ -137,7 +137,7 @@ def multi_index(expr: IntoExprColumn, lookup: pl.Series) -> pl.Expr:
         args=[expr, lookup],
         plugin_path=LIB,
         function_name="multi_index",
-        is_elementwise=True,
+        is_elementwise=False,
         # ! BUG -> When `kwargs` is removed, there's a 7x performance penalty
         kwargs={"lookup": lookup},
     )
