@@ -15,8 +15,11 @@ test:
 		--codeblocks
 
 bench:
-	@uv run tests/bench.py
-
+	@uv run pytest \
+		--benchmark-columns=mean,rounds \
+		--benchmark-sort=mean \
+		--benchmark-group-by=group \
+		--benchmark-only
 lint:
 	@uvx ruff format
 	@uvx ruff check --fix
