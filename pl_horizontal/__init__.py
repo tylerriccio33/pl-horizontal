@@ -182,3 +182,44 @@ def arg_max_horizontal(
         is_elementwise=True,
         input_wildcard_expansion=True,
     )
+
+
+def arg_min_horizontal(
+    expr: IntoExprColumn, *, return_colname: bool = False
+) -> pl.Expr:
+    """Return the index of the minimum value per row, or None if all values are null.
+
+    Args:
+        expr (IntoExprColumn): Columns across the dataframe, evaluated in order.
+        return_colname (bool, optional): Return the column name instead of the index. Defaults to False.
+
+    Returns:
+        pl.Expr: Expression evaluating to the index or column name of the minimum value.
+
+    Examples:
+        >>> import polars as pl
+        >>> df = pl.DataFrame({
+        ...     "a": [1, None, 3],
+        ...     "b": [2, 2, None],
+        ...     "c": [None, 3, 1]
+        ... })
+        >>> res = df.select(f = arg_min_horizontal(pl.col('a','b','c'), return_colname=False))
+        >>> assert res["f"].to_list() == [0, 1, 2]  # indices of min values
+        >>> res = df.select(f = arg_min_horizontal(pl.col('a','b','c'), return_colname=True))
+        >>> assert res["f"].to_list() == ['a', 'b', 'c']  # names of min value columns
+    """
+    if return_colname:
+        return register_plugin_function(
+            args=[expr],
+            plugin_path=LIB,
+            function_name="arg_min_horizontal_colname",
+            is_elementwise=True,
+            input_wildcard_expansion=True,
+        )
+    return register_plugin_function(
+        args=[expr],
+        plugin_path=LIB,
+        function_name="arg_min_horizontal",
+        is_elementwise=True,
+        input_wildcard_expansion=True,
+    )
