@@ -1,7 +1,6 @@
 import pytest
 import polars as pl
 from pl_horizontal import arg_max_horizontal
-import numpy as np
 
 
 @pytest.mark.parametrize("colname", [True, False])
@@ -230,40 +229,19 @@ def test_arg_max_mixed_types(colname: bool):
     assert result["arg_max"].to_list() == expected
 
 
-## -- Benchmarks
-@pytest.fixture
-def df() -> pl.DataFrame:
-    n_rows = 1_000_000
-    n_cols = 20
-
-    rng = np.random.default_rng(seed=42)
-
-    data = {}
-    for i in range(n_cols):
-        ints = rng.integers(low=0, high=1_000, size=n_rows)
-
-        # Randomly set ~10% to None
-        mask = rng.random(n_rows) < 0.1
-        col = np.where(mask, None, ints)
-
-        data[f"col{i}"] = col.tolist()
-
-    return pl.DataFrame(data)
+def test_arg_max_bench(benchmark, df_ints):
+    benchmark.group = "arg_star"
+    benchmark(lambda: df_ints.select(arg_max_horizontal(pl.all())))
 
 
-def test_arg_max_bench(benchmark, df):
-    benchmark.group = "arg_max"
-    benchmark(lambda: df.select(arg_max_horizontal(pl.all())))
+def test_arg_max_bench_colname(benchmark, df_ints):
+    benchmark.group = "arg_star"
+    benchmark(lambda: df_ints.select(arg_max_horizontal(pl.all(), return_colname=True)))
 
 
-def test_arg_max_bench_colname(benchmark, df):
-    benchmark.group = "arg_max"
-    benchmark(lambda: df.select(arg_max_horizontal(pl.all(), return_colname=True)))
-
-
-def test_arg_max_bench_old(benchmark, df):
-    benchmark.group = "arg_max"
-    benchmark(lambda: df.select(pl.concat_arr(pl.all()).arr.arg_max()))
+def test_arg_max_bench_old(benchmark, df_ints):
+    benchmark.group = "arg_star"
+    benchmark(lambda: df_ints.select(pl.concat_arr(pl.all()).arr.arg_max()))
 
 
 if __name__ == "__main__":
