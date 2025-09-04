@@ -12,7 +12,7 @@ test:
 		--benchmark-sort=mean \
 		--benchmark-group-by=group \
 		--doctest-plus \
-		--doctest-glob '*.md'
+		--codeblocks
 
 bench:
 	@uv run tests/bench.py
