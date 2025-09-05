@@ -20,6 +20,7 @@ module-name = "pl_horizontal._internal"
 
 [dependency-groups]
 dev = [
+    "hypothesis>=6.138.14",
     "mimesis>=18.0.0",
     "numpy>=2.3.2",
     "pytest>=8.3.5",
