@@ -1,6 +1,8 @@
 import pytest
 import polars as pl
 from pl_horizontal import is_max
+import polars.testing.parametric as ptp
+from hypothesis import given, strategies as st
 
 
 def test_simple_max() -> None:
@@ -30,6 +32,26 @@ def test_with_nulls() -> None:
     res = df.select(top=is_max(pl.col("colb")).over("cola"))
 
     assert res.equals(exp)
+
+
+@given(df=ptp.dataframes(min_cols=1, allowed_dtypes={pl.Int64, pl.Float64, pl.UInt32}))
+def test_correctness_hypothesis(df: pl.DataFrame) -> None:
+    expr = is_max(pl.all())
+    res = df.select(expr)
+
+    if df.height == 0:
+        pytest.mark.skip("No rows to test")
+        return
+
+    for col in df.columns:
+        ser: pl.Series = df[col]
+        res_ser: pl.Series = res[col]
+        exp_max = ser.max()
+        real_max = df[col][res_ser.arg_max()]
+        assert exp_max == real_max, f"Failed on column {col} with df:\n{df}"
+
+    if df.width == 1:
+        return
 
 def test_no_over() -> None:
     df = pl.DataFrame(
