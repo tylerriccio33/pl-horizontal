@@ -250,3 +250,30 @@ def is_max(expr: IntoExprColumn) -> pl.Expr:
         function_name="is_max",
         is_elementwise=False,  # ? must be `False` for `over` to work properly
     )
+
+
+def is_min(expr: IntoExprColumn) -> pl.Expr:
+    """Return a boolean mask indicating the minimum value(s) per row.
+
+    Args:
+        expr (IntoExprColumn): Columns across the dataframe, evaluated in order.
+
+    Returns:
+        pl.Expr: Expression evaluating to a boolean mask of minimum values.
+
+    Examples:
+        >>> import polars as pl
+        >>> df = pl.DataFrame({
+        ...     "a": [1, None, 3],
+        ...     "b": [2, 2, None],
+        ...     "c": [None, 3, 1]
+        ... })
+        >>> res = df.select(is_min(pl.col('a','b','c')))
+        >>> assert res.to_series().to_list() == [True, False, False]  # min values mask
+    """
+    return register_plugin_function(
+        args=[expr],
+        plugin_path=LIB,
+        function_name="is_min",
+        is_elementwise=False,  # ? must be `False` for `over` to work properly
+    )
