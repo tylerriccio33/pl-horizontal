@@ -2,6 +2,7 @@ mod collapse;
 mod arg_true;
 mod multi_index;
 mod arg_minmax;
+mod is_minmax;
 use pyo3::prelude::*;
 use pyo3_polars::PolarsAllocator;
 
