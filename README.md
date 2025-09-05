@@ -24,6 +24,8 @@ uv pip install pl-horizontal
 - `multi_index`: Get the value using an index on a lookup provided.
 - `arg_max_horizontal`: Get the index (or column name) of the maximum value in a row.
 - `arg_min_horizontal`: Get the index (or column name) of the minimum value in a row.
+- `is_max`: Get a boolean mask of whether the value is the maximum, works with over/groupby.
+- `is_min`: Get a boolean mask of whether the value is the minimum, works with over/groupby.
 
 ## Benchmarks and Performance
 
@@ -53,6 +55,21 @@ print(res)
 assert res.to_series().to_list() == ['b', 'a', 'c']
 ```
 
+### Figure out which values are the max/min
+
+```python
+import polars as pl
+from pl_horizontal import is_max, is_min
+df = pl.DataFrame({
+    "a": [1, 2, None],
+    "b": [3, None, 1],
+    "c": [2, 1, 4]
+})
+# Check which values are the max per row
+res = df.select(is_max(pl.all()))
+print(res)
+```
+
 ### Collapse Columns into List
 
 ```python
@@ -77,6 +94,7 @@ assert res_fast.to_series().to_list() == [['x','y'], [], ['z']]
 ```
 
 ### Horizontal Boolean Checks
+
 ```python
 import polars as pl
 from pl_horizontal import arg_true_horizontal, arg_first_true_horizontal
@@ -119,6 +137,7 @@ res = df.select(multi_index(pl.all(), lookup=ser))
 print(res)
 assert expected.equals(res)
 ```
+
 ## Contributing
 
 This is a simple project, would welcome any rust people, since I'm very new to it!
