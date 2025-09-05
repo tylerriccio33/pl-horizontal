@@ -50,18 +50,20 @@ def test_arg_max_basic(colname: bool):
         expected = [1, 2, 1]
     assert result["arg_max"].to_list() == expected
 
+
 def test_arg_max_so() -> None:
     # https://stackoverflow.com/questions/77967334/getting-min-max-column-name-in-polars/
     df = pl.DataFrame(
-    {
-        "a": [1, 8, 3],
-        "b": [4, 5, None],
-    }
-)
+        {
+            "a": [1, 8, 3],
+            "b": [4, 5, None],
+        }
+    )
 
-    res = df.with_columns(max = arg_max_horizontal(pl.all(), return_colname=True))
+    res = df.with_columns(max=arg_max_horizontal(pl.all(), return_colname=True))
 
     assert res["max"].to_list() == ["b", "a", "a"]
+
 
 @pytest.mark.parametrize("colname", [True, False])
 def test_arg_max_with_nulls(colname: bool):

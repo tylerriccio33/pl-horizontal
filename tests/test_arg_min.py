@@ -229,20 +229,5 @@ def test_arg_min_mixed_types(colname: bool):
     assert result["arg_min"].to_list() == expected
 
 
-def test_arg_min_bench(benchmark, df_ints):
-    benchmark.group = "arg_star"
-    benchmark(lambda: df_ints.select(arg_min_horizontal(pl.all())))
-
-
-def test_arg_min_bench_colname(benchmark, df_ints):
-    benchmark.group = "arg_star"
-    benchmark(lambda: df_ints.select(arg_min_horizontal(pl.all(), return_colname=True)))
-
-
-def test_arg_min_bench_old(benchmark, df_ints):
-    benchmark.group = "arg_star"
-    benchmark(lambda: df_ints.select(pl.concat_arr(pl.all()).arr.arg_max()))
-
-
 if __name__ == "__main__":
     pytest.main([__file__])
