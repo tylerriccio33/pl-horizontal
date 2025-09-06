@@ -277,3 +277,27 @@ def is_min(expr: IntoExprColumn) -> pl.Expr:
         function_name="is_min",
         is_elementwise=False,  # ? must be `False` for `over` to work properly
     )
+
+
+def arg_first_null_horizontal(expr: IntoExprColumn) -> pl.Expr:
+    """
+    Return the index of the first Null value per row, or None if no Null is found.
+
+    Args:
+        expr: A Polars expression or column(s) to evaluate row-wise.
+
+    Returns:
+        pl.Expr: Expression returning the index of the first Null in each row.
+
+    Example:
+        >>> df = pl.DataFrame({"a": [1, 2, None], "b": [None, 2, 3], "c": [1, None, 3]})
+        >>> df.select(arg_first_null_horizontal(pl.all())).to_series().to_list()
+        [1, 2, 0]
+    """
+    return register_plugin_function(
+        args=[expr],
+        plugin_path=LIB,
+        function_name="arg_first_null_horizontal",
+        is_elementwise=True,
+        input_wildcard_expansion=True,
+    )
