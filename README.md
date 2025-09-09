@@ -21,6 +21,7 @@ uv pip install pl-horizontal
 - `collapse_columns`: Collapse multiple columns into a list column, optionally using a null-sentinel fast path.
 - `arg_true_horizontal`: Check if any column in a row is True.
 - `arg_first_true_horizontal`: Get the index of the first True value in a row.
+- `arg_first_null_horizontal`: Get the index of the first null value in a row.
 - `multi_index`: Get the value using an index on a lookup provided.
 - `arg_max_horizontal`: Get the index (or column name) of the maximum value in a row.
 - `arg_min_horizontal`: Get the index (or column name) of the minimum value in a row.
@@ -37,6 +38,23 @@ If there's a custom implementation, I will include benchmarks against the polars
 ![collapse-columns](docs/collapse-columns.png)
 
 ## Usage
+
+### Get the First Null Value
+
+```python
+import polars as pl
+from pl_horizontal import arg_first_null_horizontal
+
+df = pl.DataFrame({
+    "a": [1, 2, None],
+    "b": [3, None, 1],
+    "c": [2, 1, 4]
+})
+# Get the index of the first null value per row
+res = df.select(arg_first_null_horizontal(pl.all()))
+print(res)
+assert res.to_series().to_list() == [None, 1, 0]
+```
 
 ### Get Min/Max Horizontally
 

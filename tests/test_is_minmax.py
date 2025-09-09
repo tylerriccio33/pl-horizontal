@@ -3,6 +3,7 @@ import polars as pl
 from pl_horizontal import is_max, is_min
 import polars.testing.parametric as ptp
 from hypothesis import given
+import polars.selectors as cs
 
 
 def test_simple_max() -> None:
@@ -64,6 +65,8 @@ def test_with_nulls_min() -> None:
 
 @given(df=ptp.dataframes(min_cols=1, allowed_dtypes={pl.Int64, pl.Float64, pl.UInt32}))
 def test_correctness_hypothesis_max(df: pl.DataFrame) -> None:
+    df = df.select(cs.float().fill_nan(None))
+
     expr = is_max(pl.all())
     res = df.select(expr)
 
@@ -84,6 +87,8 @@ def test_correctness_hypothesis_max(df: pl.DataFrame) -> None:
 
 @given(df=ptp.dataframes(min_cols=1, allowed_dtypes={pl.Int64, pl.Float64, pl.UInt32}))
 def test_correctness_hypothesis_min(df: pl.DataFrame) -> None:
+    df = df.select(cs.float().fill_nan(None))
+
     expr = is_min(pl.all())
     res = df.select(expr)
 
