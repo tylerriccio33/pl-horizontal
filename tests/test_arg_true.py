@@ -100,6 +100,7 @@ def test_with_nulls(stop_on_first: bool, selector: pl.Expr):
 
 
 ## Benchmaks:
+# TODO: These should all be conf fixtures
 @pytest.fixture
 def df():
     n_rows = 100_000

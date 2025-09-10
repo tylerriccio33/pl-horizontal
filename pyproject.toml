@@ -17,14 +17,15 @@ dependencies = [
 
 [tool.maturin]
 module-name = "pl_horizontal._internal"
-version-from-git = true
 
 [dependency-groups]
 dev = [
+    "hypothesis>=6.138.14",
     "mimesis>=18.0.0",
     "numpy>=2.3.2",
     "pytest>=8.3.5",
     "pytest-benchmark>=5.1.0",
+    "pytest-codeblocks>=0.17.0",
     "pytest-cov",
     "pytest-doctestplus>=1.4.0",
     "pytest-randomly>=3.16.0",
