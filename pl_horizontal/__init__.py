@@ -133,11 +133,12 @@ def multi_index(expr: IntoExprColumn, lookup: pl.Series) -> pl.Expr:
     if not lookup.dtype.is_(pl.String):
         raise TypeError(f"`lookup` must be a String series, not `{type(lookup)}`")
 
+    # TODO: Check if same length (if possible) to switch to elementwise
+    # - Allow user to indicate same length too
+
     return register_plugin_function(
         args=[expr, lookup],
         plugin_path=LIB,
         function_name="multi_index",
         is_elementwise=True,
-        # ! BUG -> When `kwargs` is removed, there's a 7x performance penalty
-        kwargs={"lookup": lookup},
     )
